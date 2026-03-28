@@ -41,14 +41,14 @@ git clone https://github.com/PII-5-AskMyData/ask-my-data-app
 **No Windows:**
 ```Bash
 python -m venv venv
-venv\Scripts\activate
+venv\Scripts\activate.bat
 pip install -r requirements.txt
 ```
 
 **No Mac/Linux:**
 ```Bash
-python -m venv venv
-venv\Scripts\activate
+python3 -m venv venv
+source venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
