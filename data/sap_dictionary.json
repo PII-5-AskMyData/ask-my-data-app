@@ -1,0 +1,44 @@
+[
+  {
+    "table_name": "MSEG",
+    "description": "Documento de Material: Segmento",
+    "fields": [
+      {"name": "MBLNR", "description": "Número do documento de material"},
+      {"name": "MJAHR", "description": "Ano do documento de material"},
+      {"name": "ZEILE", "description": "Item do documento de material"},
+      {"name": "MATNR", "description": "Número do material"},
+      {"name": "WERKS", "description": "Centro"},
+      {"name": "MENGE", "description": "Quantidade"}
+    ]
+  },
+  {
+    "table_name": "VBRK",
+    "description": "Documento de Faturamento: Dados de Cabeçalho",
+    "fields": [
+      {"name": "VBELN", "description": "Documento de faturamento"},
+      {"name": "FKART", "description": "Tipo de faturamento"},
+      {"name": "VKORG", "description": "Organização de vendas"},
+      {"name": "NETWR", "description": "Valor líquido na moeda do documento"}
+    ]
+  },
+  {
+    "table_name": "AFKO",
+    "description": "Dados de cabeçalho da ordem de produção (PP)",
+    "fields": [
+      {"name": "AUFNR", "description": "Número da ordem"},
+      {"name": "GLTRP", "description": "Data de conclusão básica"},
+      {"name": "GAMNG", "description": "Quantidade total da ordem"}
+    ]
+  },
+  {
+    "table_name": "EKPO",
+    "description": "Item do Documento de Compras",
+    "fields": [
+      {"name": "EBELN", "description": "Número do documento de compras"},
+      {"name": "EBELP", "description": "Número do item do documento de compras"},
+      {"name": "MATNR", "description": "Número do material"},
+      {"name": "MENGE", "description": "Quantidade do pedido de compras"},
+      {"name": "NETPR", "description": "Preço líquido"}
+    ]
+  }
+]
