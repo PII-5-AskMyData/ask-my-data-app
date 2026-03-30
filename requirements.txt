@@ -1,6 +1,5 @@
 streamlit
 langchain
-langchain-community
-chromadb
-sentence-transformers
+langchain-ollama
+langchain-chroma
 pywebview

@@ -1,49 +1,51 @@
+import signal
+import requests
 import webview
-import threading
 import sys
 import os
 import subprocess
 import time
-import socket
-
-def is_port_in_use(port):
-    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-        return s.connect_ex(('127.0.0.1', port)) == 0
 
 def start_streamlit():
     app_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'app.py')
     env = os.environ.copy()
     
     # Roda o Streamlit em modo headless (sem abrir o browser nativo automaticamente)
-    subprocess.Popen(
+    process = subprocess.Popen(
         [sys.executable, "-m", "streamlit", "run", app_path, "--server.port", "8501", "--server.headless", "true"],
-        env=env
+        env=env,
+        preexec_fn=os.setsid 
     )
 
+    return process
+
+def wait_for_streamlit(url="http://localhost:8501", timeout=20):
+    start = time.time()
+    while time.time() - start < timeout:
+        try:
+            requests.get(url)
+            return True
+        except:
+            time.sleep(0.5)
+    return False
+
+def stop_streamlit(process):
+    if process and process.poll() is None:
+        try:
+            os.killpg(os.getpgid(process.pid), signal.SIGTERM)
+            process.wait(timeout=5)
+        except:
+            os.killpg(os.getpgid(process.pid), signal.SIGKILL)
+
 if __name__ == '__main__':
-    # Usar pywebview como empacotador desktop de um servidor web interno
-    port = 8501
-    
-    if not is_port_in_use(port):
-        t = threading.Thread(target=start_streamlit, daemon=True)
-        t.start()
-    
-    # Aguarda o streamlit subir a porta
-    retries = 30
-    while not is_port_in_use(port) and retries > 0:
-        time.sleep(1)
-        retries -= 1
-        
-    if retries == 0:
-        print("Aviso: Streamlit pode nao ter iniciado completamente a tempo.")
-        
-    print("Iniciando janela WebView da aplicacao...")
-    webview.create_window(
-        title='Ask My Data - Klabin [RAG]', 
-        url=f'http://127.0.0.1:{port}', 
-        width=1280, 
-        height=800,
-        confirm_close=True
-    )
-    # Executa a aplicacao desktop
-    webview.start()
+    # Usar pywebview como empacotador desktop de um servidor web interno  
+    streamlit_process = start_streamlit()
+
+    if wait_for_streamlit():
+        print("Iniciando janela WebView da aplicacao...")
+        window = webview.create_window("Ask My Data", "http://localhost:8501")
+        webview.start(gui="gtk")
+    else:
+        print("Falha ao iniciar Streamlit.")
+
+    stop_streamlit(streamlit_process)
