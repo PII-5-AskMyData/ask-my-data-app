@@ -3,42 +3,70 @@
     "table_name": "MSEG",
     "description": "Documento de Material: Segmento",
     "fields": [
-      {"name": "MBLNR", "description": "Número do documento de material"},
-      {"name": "MJAHR", "description": "Ano do documento de material"},
-      {"name": "ZEILE", "description": "Item do documento de material"},
-      {"name": "MATNR", "description": "Número do material"},
-      {"name": "WERKS", "description": "Centro"},
-      {"name": "MENGE", "description": "Quantidade"}
+      {"name": "MBLNR", "type": "VARCHAR(10)", "description": "Número do documento de material"},
+      {"name": "MJAHR", "type": "INTEGER", "description": "Ano do documento de material"},
+      {"name": "ZEILE", "type": "INTEGER", "description": "Item do documento de material"},
+      {"name": "MATNR", "type": "VARCHAR(18)", "description": "Número do material"},
+      {"name": "WERKS", "type": "VARCHAR(4)", "description": "Centro"},
+      {"name": "MENGE", "type": "DECIMAL(13,3)", "description": "Quantidade"}
     ]
   },
   {
     "table_name": "VBRK",
     "description": "Documento de Faturamento: Dados de Cabeçalho",
     "fields": [
-      {"name": "VBELN", "description": "Documento de faturamento"},
-      {"name": "FKART", "description": "Tipo de faturamento"},
-      {"name": "VKORG", "description": "Organização de vendas"},
-      {"name": "NETWR", "description": "Valor líquido na moeda do documento"}
+      {"name": "VBELN", "type": "VARCHAR(10)", "description": "Documento de faturamento"},
+      {"name": "FKART", "type": "VARCHAR(4)", "description": "Tipo de faturamento"},
+      {"name": "FKDAT", "type": "DATE", "description": "Data do faturamento"},
+      {"name": "VKORG", "type": "VARCHAR(4)", "description": "Organização de vendas"},
+      {"name": "NETWR", "type": "DECIMAL(15,2)", "description": "Valor líquido na moeda do documento"},
+      {"name": "WAERK", "type": "VARCHAR(5)", "description": "Moeda do documento"}
     ]
   },
   {
     "table_name": "AFKO",
     "description": "Dados de cabeçalho da ordem de produção (PP)",
     "fields": [
-      {"name": "AUFNR", "description": "Número da ordem"},
-      {"name": "GLTRP", "description": "Data de conclusão básica"},
-      {"name": "GAMNG", "description": "Quantidade total da ordem"}
+      {"name": "AUFNR", "type": "VARCHAR(12)", "description": "Número da ordem"},
+      {"name": "GLTRP", "type": "DATE", "description": "Data de conclusão básica"},
+      {"name": "GSTRP", "type": "DATE", "description": "Data de início básica"},
+      {"name": "GAMNG", "type": "DECIMAL(13,3)", "description": "Quantidade total da ordem"},
+      {"name": "GMEIN", "type": "VARCHAR(3)", "description": "Unidade de medida da ordem"}
     ]
   },
   {
     "table_name": "EKPO",
     "description": "Item do Documento de Compras",
     "fields": [
-      {"name": "EBELN", "description": "Número do documento de compras"},
-      {"name": "EBELP", "description": "Número do item do documento de compras"},
-      {"name": "MATNR", "description": "Número do material"},
-      {"name": "MENGE", "description": "Quantidade do pedido de compras"},
-      {"name": "NETPR", "description": "Preço líquido"}
+      {"name": "EBELN", "type": "VARCHAR(10)", "description": "Número do documento de compras"},
+      {"name": "EBELP", "type": "INTEGER", "description": "Número do item do documento de compras"},
+      {"name": "MATNR", "type": "VARCHAR(18)", "description": "Número do material"},
+      {"name": "TXZ01", "type": "VARCHAR(40)", "description": "Descrição curta do material"},
+      {"name": "MENGE", "type": "DECIMAL(13,3)", "description": "Quantidade do pedido de compras"},
+      {"name": "NETPR", "type": "DECIMAL(11,2)", "description": "Preço líquido"},
+      {"name": "BPRME", "type": "VARCHAR(3)", "description": "Unidade de preço do pedido"}
+    ]
+  },
+  {
+    "table_name": "MARA",
+    "description": "Dados Gerais do Material",
+    "fields": [
+      {"name": "MATNR", "type": "VARCHAR(18)", "description": "Número do material"},
+      {"name": "MAKTX", "type": "VARCHAR(40)", "description": "Descrição do material"},
+      {"name": "MTART", "type": "VARCHAR(4)", "description": "Tipo de material"},
+      {"name": "MATKL", "type": "VARCHAR(9)", "description": "Grupo de mercadorias"},
+      {"name": "MEINS", "type": "VARCHAR(3)", "description": "Unidade de medida básica"}
+    ]
+  },
+  {
+    "table_name": "LIKP",
+    "description": "Documento de Entrega: Cabeçalho",
+    "fields": [
+      {"name": "VBELN", "type": "VARCHAR(10)", "description": "Número da entrega"},
+      {"name": "LFDAT", "type": "DATE", "description": "Data da entrega"},
+      {"name": "KUNNR", "type": "VARCHAR(10)", "description": "Número do cliente"},
+      {"name": "WADAT", "type": "DATE", "description": "Data planejada de saída de mercadoria"},
+      {"name": "BTGEW", "type": "DECIMAL(15,3)", "description": "Peso bruto"}
     ]
   }
 ]
