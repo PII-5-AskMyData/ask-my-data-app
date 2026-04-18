@@ -26,7 +26,7 @@ ask-my-data-app/
 - Abra o terminal do seu computador (Prompt de Comando, PowerShell ou terminal do Linux/Mac).
 - Digite o seguinte comando e dê enter: 
 ```Bash
-ollama run qwen2.5-coder:1.5b
+ollama run qwen2.5-coder:3b
 ```
 Na primeira vez, o Ollama vai fazer o download do arquivo do modelo (a versão de 1.5b pesa pouco mais de 1 GB). Assim que o download terminar, o seu terminal vai se transformar em um chat e você já poderá conversar com a IA. Digite `\bye` para sair.
 
