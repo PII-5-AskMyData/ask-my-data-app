@@ -8,7 +8,7 @@ from langchain_core.output_parsers import JsonOutputParser
 
  
 # Motor do modelo LLM qwen2.5 1.5b
-llm = OllamaLLM(model = "qwen2.5-coder:1.5b", base_url="http://localhost:11434", temperature=0.0)
+llm = OllamaLLM(model = "qwen2.5-coder:3b", base_url="http://localhost:11434", temperature=0.0)
 
 json_parser = JsonOutputParser()
 
@@ -16,6 +16,13 @@ template_str = """Você é um especialista SAP. Gere a consulta baseada no conte
 Retorne a resposta EXCLUSIVAMENTE em formato JSON válido, com as seguintes chaves:
 - "codigo": contendo o script SQL ou ABAP gerado.
 - "explicacao": uma breve explicação de 1 linha sobre o que o código faz.
+
+REGRAS DE OURO:
+1. NUNCA invente tabelas ou colunas. Use APENAS o que está listado no Contexto.
+2. Por mais que 2 ou mais tabelas aparessam preze pela simplicidade, se em apenas uma tabela você pode responder a necessidade do usuário faça isso, ou seja, não faça joins !
+3. Seja eficiente: Se os dados necessários já estiverem na mesma tabela, NÃO faça comandos JOIN.
+4. Use a sintaxe SQL padrão (Exemplo: Tabela.Campo). Não use hífen (Tabela-Campo).
+5. Se nenhuma tabela for encontrada ou se o usuário falar algo fora do contexto peça desculpas e informe que devido ao erro você não pode fazer nada. 
 
 CONTEXTO: {contexto}
 PERGUNTA: {pergunta}
@@ -88,12 +95,20 @@ def process_user_query(query: str):
     Funcao principal chamada pelo Streamlit para orquestrar o agente.
     """
     db = get_vector_store()
+
+    retriver = db.as_retriever(
+        search_type="similarity_score_threshold",
+        search_kwargs={
+            "score_threshold": 0.55,
+            "k": 2
+        }
+    )
     
     tables_identified = []
     if db:
         # Recuperacao semantica por RAG
         # Para fins de demonstracao, pegamos as 2 tabelas mais similares a intencao do usuario
-        results = db.similarity_search(query, k=2)
+        results = retriver.invoke(query)
         for res in results:
             tables_identified.append({
                 "name": res.metadata.get("table_name", "Desconhecido"),
