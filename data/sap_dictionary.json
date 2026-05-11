@@ -1,5 +1,5 @@
 [
-  {
+ {
     "table_name": "MSEG",
     "description": "Documento de Material: Segmento",
     "fields": [
@@ -7,8 +7,9 @@
       {"name": "MJAHR", "type": "INTEGER", "description": "Ano do documento de material"},
       {"name": "ZEILE", "type": "INTEGER", "description": "Item do documento de material"},
       {"name": "MATNR", "type": "VARCHAR(18)", "description": "Número do material"},
-      {"name": "WERKS", "type": "VARCHAR(4)", "description": "Centro"},
-      {"name": "MENGE", "type": "DECIMAL(13,3)", "description": "Quantidade"}
+      {"name": "WERKS", "type": "VARCHAR(4)", "description": "Centro / Planta"},
+      {"name": "MENGE", "type": "DECIMAL(13,3)", "description": "Quantidade"},
+      {"name": "AUFNR", "type": "VARCHAR(12)", "description": "Número da ordem (Ligação com Produção)"}
     ]
   },
   {
@@ -27,11 +28,12 @@
     "table_name": "AFKO",
     "description": "Dados de cabeçalho da ordem de produção (PP)",
     "fields": [
-      {"name": "AUFNR", "type": "VARCHAR(12)", "description": "Número da ordem"},
+      {"name": "AUFNR", "type": "VARCHAR(12)", "description": "Número da ordem (Ligação com Produção)"},
       {"name": "GLTRP", "type": "DATE", "description": "Data de conclusão básica"},
       {"name": "GSTRP", "type": "DATE", "description": "Data de início básica"},
       {"name": "GAMNG", "type": "DECIMAL(13,3)", "description": "Quantidade total da ordem"},
-      {"name": "GMEIN", "type": "VARCHAR(3)", "description": "Unidade de medida da ordem"}
+      {"name": "GMEIN", "type": "VARCHAR(3)", "description": "Unidade de medida da ordem"},
+      {"name": "WERKS", "type": "VARCHAR(4)", "description": "Centro / Planta de produção"}
     ]
   },
   {

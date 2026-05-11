@@ -5,6 +5,7 @@ from langchain_chroma import Chroma
 from langchain_core.documents import Document
 from langchain_core.prompts import PromptTemplate
 from langchain_core.output_parsers import JsonOutputParser
+import re
 import pandas as pd
 
 
@@ -14,17 +15,17 @@ llm = OllamaLLM(model = "qwen2.5-coder:3b", base_url="http://localhost:11434", t
 
 json_parser = JsonOutputParser()
 
-template_str = """Você é um especialista SAP. Gere a consulta baseada no contexto.
+template_str = """Você é um especialista SAP. Gere a consulta baseada no contexto fornecido.
 Retorne a resposta EXCLUSIVAMENTE em formato JSON válido, com as seguintes chaves:
-- "codigo": contendo o script SQL ou ABAP gerado.
+- "codigo": contendo o script SQL gerado.
 - "explicacao": uma breve explicação de 1 linha sobre o que o código faz.
 
 REGRAS DE OURO:
-1. NUNCA invente tabelas ou colunas. Use APENAS o que está listado no Contexto.
-2. Por mais que 2 ou mais tabelas aparessam preze pela simplicidade, se em apenas uma tabela você pode responder a necessidade do usuário faça isso, ou seja, não faça joins !
-3. Seja eficiente: Se os dados necessários já estiverem na mesma tabela, NÃO faça comandos JOIN.
-4. Use a sintaxe SQL padrão (Exemplo: Tabela.Campo). Não use hífen (Tabela-Campo).
-5. Se nenhuma tabela for encontrada ou se o usuário falar algo fora do contexto peça desculpas e informe que devido ao erro você não pode fazer nada. 
+1. NUNCA invente tabelas ou colunas. Use APENAS as tabelas e os campos listados no Contexto abaixo.
+2. UTILIZE O MÍNIMO DE TABELAS NECESSÁRIAS. Analise cada uma e ignore as que não possuem relação com a pergunta.
+3. RELACIONAMENTO (JOIN): Se a pergunta pedir cruzamento de dados (ex: Produção e Centro) e eles estiverem em tabelas diferentes no Contexto, FAÇA UM JOIN utilizando a coluna em comum (ex: AUFNR).
+4. Use a sintaxe SQL padrão (Exemplo: Tabela.Campo).
+5. Se não houver como relacionar as tabelas fornecidas para responder à pergunta, retorne a chave "codigo" vazia e explique o porquê.
 
 CONTEXTO: {contexto}
 PERGUNTA: {pergunta}
@@ -38,6 +39,14 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DATA_FILE = os.path.join(BASE_DIR, "data", "sap_dictionary.json")
 VECTOR_DB_DIR = os.path.join(BASE_DIR, "data", "chroma_db")
 
+TAGS_PER_TABLE = {
+    "MSEG": "movimentação, estoque, centro, planta, material, filial, local",
+    "AFKO": "produção, fabricação, ordem, quantidade, manufatura",
+    "VBRK": "faturamento, vendas, notas fiscais, receita",
+    "EKPO": "compras, pedido, aquisição, suprimentos",
+    "MARA": "produto, item, peça, mercadoria",
+    "LIKP": "entrega, envio, despacho, transporte"
+}
 
 def load_data():
     """Carrega o dicionario SAP mockado em memoria."""
@@ -49,16 +58,28 @@ def load_data():
     
     docs = []
     for table in data:
-        # Texto sendo indexado no banco vetorial
-        content = f"Tabela SAP: {table['table_name']}\nDescricao: {table['description']}\nCampos:\n"
+        nome_tabela = table['table_name']
+        
+        # Busca as tags dinamicamente pelo nome da tabela
+        tags_dinamicas = TAGS_PER_TABLE.get(nome_tabela, "")
+        
+        # Monta o texto para o vetor
+        content = f"Tabela SAP: {nome_tabela}\n"
+        content += f"Descrição: {table['description']}\n"
+        
+        if tags_dinamicas:
+             content += f"Palavras-chave e Sinônimos (Negócio): {tags_dinamicas}\n"
+             
+        content += "Campos:\n"
         for field in table['fields']:
             content += f"- {field['name']}: {field['description']}\n"
         
         docs.append(Document(
             page_content=content, 
             metadata={
-                "table_name": table["table_name"], 
-                "description": table["description"]
+                "table_name": nome_tabela, 
+                "description": table["description"],
+                "tags": tags_dinamicas # Salva no metadata para uso futuro
             }
         ))
     return docs
@@ -235,35 +256,105 @@ def get_vector_store():
 #     )
 #     return {"chart_type": chart_type, "data": df, "x": "Categoria", "y": "Valor", "title": "Resultado da Consulta"}
 
+def translate_to_sap(user_querry: str) -> str:
+    """
+    Pré-processa a string do usuário traduzindo jargões de negócio 
+    para a nomenclatura padrão descrita no schema do SAP.
+    """
+    
+    # Dicionário de Regex mapeando (Padrão de Negócio -> Termo do Schema SAP)
+    # O \b garante que apenas a palavra exata seja substituída (word boundaries)
+    dicionario_sap = {
+        # --- Localidades / Plantas ---
+        r'\bplantas?\b': 'centro',
+        r'\bf[áa]bricas?\b': 'centro',
+        r'\bfilia(l|is)\b': 'centro',
+        r'\bunidades?\b': 'centro',
+
+        # --- Materiais / Produtos ---
+        r'\bprodutos?\b': 'material',
+        r'\bitens?\b': 'material',
+        r'\bpe[çc]as?\b': 'material',
+        r'\bmercadorias?\b': 'material',
+        r'\binsumos?\b': 'material',
+
+        # --- Quantidade / Medidas ---
+        r'\bvolumes?\b': 'quantidade',
+        r'\bmontantes?\b': 'quantidade',
+
+        # --- Vendas / Faturamento ---
+        r'\bvendas?\b': 'faturamento',
+        r'\bnotas? fiscais\b': 'faturamento',
+        r'\bnfs?\b': 'faturamento',
+        r'\breceitas?\b': 'faturamento',
+        r'\bcomprador(es)?\b': 'cliente',
+
+        # --- Compras / Suprimentos ---
+        r'\bcompras?\b': 'documento de compras',
+        r'\bpedidos? (de )?compra\b': 'documento de compras',
+        r'\baquisi[çc][ãa]o\b': 'documento de compras',
+        r'\bfornecedor(es)?\b': 'fornecedor', # Caso expanda o schema para LFA1
+
+        # --- Produção ---
+        r'\bfabrica[çc][ãa]o\b': 'produção',
+        r'\bmanufatura\b': 'produção',
+
+        # --- Logística / Entregas ---
+        r'\benvios?\b': 'entrega',
+        r'\bdespachos?\b': 'entrega',
+        r'\btransportes?\b': 'entrega'
+    }
+
+    # Transforma em minúsculo para facilitar o match
+    pergunta_traduzida = user_querry.lower()
+
+    # Aplica as regras de substituição
+    for padrao, termo_sap in dicionario_sap.items():
+        pergunta_traduzida = re.sub(padrao, termo_sap, pergunta_traduzida)
+
+    return pergunta_traduzida
+
 
 def process_user_query(query: str):
     """Função principal chamada pelo Streamlit para orquestrar o agente RAG."""
     db = get_vector_store()
 
+    refected_user_query = translate_to_sap(user_querry=query)
+    print("Pergunta traduzida: ", refected_user_query)
+
     retriver = db.as_retriever(
-        search_type="similarity_score_threshold",
+        search_type="similarity",
         search_kwargs={
-            "score_threshold": 0.55,
-            "k": 2
+            # "score_threshold": 0.55,
+            "k": 3,
+            # "fetch_k": 15,
+            # "lambda_mult": 0.65
         }
     )
     
     tables_identified = []
+    text_for_context = []
     if db:
         # Recuperacao semantica por RAG
         # Para fins de demonstracao, pegamos as 2 tabelas mais similares a intencao do usuario
-        results = retriver.invoke(query)
+        results = retriver.invoke(refected_user_query)
         for res in results:
             tables_identified.append(
                 {
                     "name": res.metadata.get("table_name", "Desconhecido"),
                     "description": res.metadata.get("description", "Sem descrição"),
+                    "tags": res.metadata.get("tags", "Sem tag")
                 }
             )
+            text_for_context.append(res.page_content)
+        final_ia_context = "\n\n".join(text_for_context)
     else:
         tables_identified = [{"name": "Erro", "description": "Dicionario de dados nao encontrado"}]
-    
-    prompt_sap = PromptTemplate.from_template(template= template_str, partial_variables={"contexto":tables_identified,"pergunta":query,"formato_instrucoes": json_parser.get_format_instructions()})
+        final_ia_context = "Dicionário de dados não encontrado."
+   
+   
+
+    prompt_sap = PromptTemplate.from_template(template= template_str, partial_variables={"contexto":final_ia_context,"pergunta":refected_user_query,"formato_instrucoes": json_parser.get_format_instructions()})
 
     chain = prompt_sap | llm
     
