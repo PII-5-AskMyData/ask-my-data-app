@@ -19,6 +19,10 @@ template_str = """Você é um especialista SAP. Gere a consulta baseada no conte
 Retorne a resposta EXCLUSIVAMENTE em formato JSON válido, com as seguintes chaves:
 - "codigo": contendo o script SQL gerado.
 - "explicacao": uma breve explicação de 1 linha sobre o que o código faz.
+- "visualizacao (basei-se no SQL gerado para escolher a melhor opção)": objeto contendo:
+    * "tipo_grafico": (escolha entre 'bar', 'line', 'area', 'pie')
+    * "cenario": (escolha entre 'producao', 'faturamento', 'compras', 'comparacao')
+    * "titulo": Um título elegante para o gráfico.
 
 REGRAS DE OURO:
 1. NUNCA invente tabelas ou colunas. Use APENAS as tabelas e os campos listados no Contexto abaixo.
@@ -115,146 +119,98 @@ def get_vector_store():
 
     return db
 
-# TODO 
 # =============================================================================
 #  SCHEMA PREVIEW — retorna dados para exibição da estrutura das tabelas
 # =============================================================================
-# def get_schema_preview():
-#     """
-#     Retorna uma lista de dicts, cada um representando uma tabela SAP com suas colunas e tipos.
-#     Formato: [{"table_name": str, "description": str, "fields": [{"name", "type", "description"}]}]
-#     """
-#     data = _load_raw_json()
-#     return data
+def _load_raw_json():
+    """Lê o arquivo JSON e retorna a lista de dicionários original."""
+    if not os.path.exists(DATA_FILE):
+        return []
+    with open(DATA_FILE, "r", encoding="utf-8") as f:
+        return json.load(f)
 
+def get_schema_preview():
+    """
+    Retorna a estrutura original do dicionário SAP para uso na UI.
+    Formato: [{"table_name": str, "description": str, "fields": [...]}]
+    """
+    # Chamamos o carregador bruto, que já devolve exatamente 
+    # o formato que a docstring exige.
+    return _load_raw_json()
 
-# def get_schema_dataframe():
-#     """
-#     Retorna um DataFrame Pandas único com todas as colunas de todas as tabelas,
-#     útil para exibição em st.dataframe.
-#     """
-#     data = _load_raw_json()
-#     rows = []
-#     for table in data:
-#         for field in table["fields"]:
-#             rows.append(
-#                 {
-#                     "Tabela": table["table_name"],
-#                     "Descrição da Tabela": table["description"],
-#                     "Coluna": field["name"],
-#                     "Tipo": field.get("type", "N/A"),
-#                     "Descrição da Coluna": field["description"],
-#                 }
-#             )
-#     return pd.DataFrame(rows)
+def get_schema_dataframe():
+    data = _load_raw_json() 
+    rows = []
+    for table in data:
+        # Aqui table é um dicionário real do JSON
+        for field in table["fields"]:
+            rows.append({
+                "Tabela": table["table_name"],
+                "Descrição da Tabela": table["description"],
+                "Coluna": field["name"],
+                "Tipo": field.get("type", "N/A"),
+                "Descrição da Coluna": field["description"],
+            })
+    return pd.DataFrame(rows)
 
-
-# TODO
 # =============================================================================
-#  GERAÇÃO DE DADOS MOCKADOS PARA GRÁFICOS
+#  CHART DATA — A PARTIR DO CENÁRIO A IA ESCOLHE O MELHOR TIPO DE GRÁFICO
 # =============================================================================
-# def _choose_chart_type(query: str):
-#     """
-#     Determina o tipo de gráfico mais adequado para a consulta do usuário.
-#     Retorna: 'bar', 'line', 'area' ou 'scatter'
-#     """
-#     q = query.lower()
+def get_chart_data(cenario: str, tipo_grafico: str, titulo_ia: str):
+    """
+    Gera dados fictícios para plotar gráficos após a geração do script SQL.
+    Retorna: {"chart_type": str, "data": pd.DataFrame, "x": str, "y": str, "title": str}
+    """
+    import random
+    random.seed(42)
 
-#     # Palavras-chave que indicam mudança ao longo do tempo → line/area
-#     time_keywords = [
-#         "mês", "meses", "mes", "ano", "anos", "semana", "dia", "data",
-#         "período", "periodo", "tempo", "evolução", "evolucao", "tendência",
-#         "tendencia", "histórico", "historico", "timeline", "crescimento"
-#     ]
-#     # Palavras-chave que indicam comparação entre categorias → bar
-#     compare_keywords = [
-#         "planta", "centro", "região", "regiao", "tipo", "categoria",
-#         "comparar", "comparação", "ranking", "top", "maior", "menor",
-#         "por material", "por fornecedor", "por cliente", "por produto"
-#     ]
-#     # Palavras-chave que indicam distribuição / concentração → scatter
-#     scatter_keywords = [
-#         "distribuição", "distribuicao", "correlação", "correlacao",
-#         "dispersão", "dispersao", "relação", "relacao"
-#     ]
+    # Cenário: produção ao longo do tempo
+    if cenario == "producao":
+        plants = ["Ortigueira", "Monte Alegre", "Correia Pinto", "Otacílio Costa"]
+        df = pd.DataFrame({
+            "Planta": plants,
+            "Produção (ton)": [random.randint(1500, 5000) for _ in plants]
+        })
+        return {"chart_type": tipo_grafico, "data": df, "x": "Planta", "y": "Produção (ton)", "title": titulo_ia}
 
-#     time_score = sum(1 for k in time_keywords if k in q)
-#     compare_score = sum(1 for k in compare_keywords if k in q)
-#     scatter_score = sum(1 for k in scatter_keywords if k in q)
+    # Cenário: comparação entre centros/plantas
+    if cenario == 'comparacao':
+        plants = ["Ortigueira", "Monte Alegre", "Correia Pinto", "Otacílio Costa", "Telêmaco Borba"]
+        df = pd.DataFrame(
+            {
+                "Planta": plants,
+                "Produção (ton)": [random.randint(1500, 5000) for _ in plants],
+            }
+        )
+        return {"chart_type": tipo_grafico, "data": df, "x": "Planta", "y": "Produção (ton)", "title": titulo_ia}
 
-#     if scatter_score > time_score and scatter_score > compare_score:
-#         return "scatter"
-#     if time_score > compare_score:
-#         return "line"
-#     if compare_score > 0:
-#         return "bar"
-#     return "bar"  # default
+    # Cenário: faturamento
+    if cenario == "faturamento":
+        categories = ["Celulose", "Papel Cartão", "Papelão Ondulado"]
+        df = pd.DataFrame({
+            "Segmento": categories,
+            "Faturamento (R$ mi)": [random.randint(50, 500) for _ in categories]
+        })
+        return {"chart_type": tipo_grafico, "data": df, "x": "Segmento", "y": "Faturamento (R$ mi)", "title": titulo_ia}
 
+    # Cenário: compras
+    if cenario == "compras":
+        items = ["Madeira", "Soda Cáustica", "Amido", "Papel Reciclado", "Energia"]
+        df = pd.DataFrame(
+            {
+                "Insumo": items,
+                "Custo (R$ mi)": [random.randint(10, 200) for _ in items],
+            }
+        )
+        return {"chart_type": tipo_grafico, "data": df, "x": "Insumo", "y": "Custo (R$ mi)", "title": titulo_ia}
+    
+    # TODO
+    # Adicionar mais cenários
 
-# def get_mock_chart_data(query: str):
-#     """
-#     Gera dados fictícios para plotar gráficos após a geração do script SQL.
-#     Retorna: {"chart_type": str, "data": pd.DataFrame, "x": str, "y": str, "title": str}
-#     """
-#     import random
-#     random.seed(42)
-
-#     chart_type = _choose_chart_type(query)
-#     q = query.lower()
-
-#     # Cenário: produção ao longo do tempo
-#     if any(k in q for k in ["mês", "meses", "mes", "período", "periodo", "tempo", "evolução"]):
-#         months = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun"]
-#         df = pd.DataFrame(
-#             {
-#                 "Mês": months,
-#                 "Volume (ton)": [random.randint(800, 2000) for _ in months],
-#             }
-#         )
-#         return {"chart_type": "line" if chart_type == "line" else "area", "data": df, "x": "Mês", "y": "Volume (ton)", "title": "Volume de Produção por Mês"}
-
-#     # Cenário: comparação entre centros/plantas
-#     if any(k in q for k in ["planta", "centro", "fábrica", "fabrica", "unidade"]):
-#         plants = ["Ortigueira", "Monte Alegre", "Correia Pinto", "Otacílio Costa", "Telêmaco Borba"]
-#         df = pd.DataFrame(
-#             {
-#                 "Planta": plants,
-#                 "Produção (ton)": [random.randint(1500, 5000) for _ in plants],
-#             }
-#         )
-#         return {"chart_type": "bar", "data": df, "x": "Planta", "y": "Produção (ton)", "title": "Produção por Planta"}
-
-#     # Cenário: faturamento
-#     if any(k in q for k in ["faturamento", "receita", "vendas", "valor", "netwr"]):
-#         categories = ["Celulose", "Papel Cartão", "Papelão Ondulado", "Madeira", "Sacos Industriais"]
-#         df = pd.DataFrame(
-#             {
-#                 "Segmento": categories,
-#                 "Faturamento (R$ mi)": [random.randint(50, 500) for _ in categories],
-#             }
-#         )
-#         return {"chart_type": "bar", "data": df, "x": "Segmento", "y": "Faturamento (R$ mi)", "title": "Faturamento por Segmento"}
-
-#     # Cenário: compras
-#     if any(k in q for k in ["compra", "pedido", "fornecedor", "preço", "preco"]):
-#         items = ["Madeira", "Soda Cáustica", "Amido", "Papel Reciclado", "Energia"]
-#         df = pd.DataFrame(
-#             {
-#                 "Insumo": items,
-#                 "Custo (R$ mi)": [random.randint(10, 200) for _ in items],
-#             }
-#         )
-#         return {"chart_type": "bar", "data": df, "x": "Insumo", "y": "Custo (R$ mi)", "title": "Custo por Insumo"}
-
-#     # Default genérico
-#     labels = ["Cat A", "Cat B", "Cat C", "Cat D", "Cat E"]
-#     df = pd.DataFrame(
-#         {
-#             "Categoria": labels,
-#             "Valor": [random.randint(100, 1000) for _ in labels],
-#         }
-#     )
-#     return {"chart_type": chart_type, "data": df, "x": "Categoria", "y": "Valor", "title": "Resultado da Consulta"}
+    # Default genérico
+    df = pd.DataFrame({"Categoria": ["A", "B", "C"], "Valor": [10, 20, 30]})
+    
+    return {"chart_type": tipo_grafico, "data": df, "x": "Categoria", "y": "Valor", "title": titulo_ia}
 
 def translate_to_sap(user_querry: str) -> str:
     """
@@ -305,10 +261,8 @@ def translate_to_sap(user_querry: str) -> str:
         r'\btransportes?\b': 'entrega'
     }
 
-    # Transforma em minúsculo para facilitar o match
     pergunta_traduzida = user_querry.lower()
 
-    # Aplica as regras de substituição
     for padrao, termo_sap in dicionario_sap.items():
         pergunta_traduzida = re.sub(padrao, termo_sap, pergunta_traduzida)
 
@@ -336,7 +290,6 @@ def process_user_query(query: str):
     text_for_context = []
     if db:
         # Recuperacao semantica por RAG
-        # Para fins de demonstracao, pegamos as 2 tabelas mais similares a intencao do usuario
         results = retriver.invoke(refected_user_query)
         for res in results:
             tables_identified.append(
@@ -356,12 +309,34 @@ def process_user_query(query: str):
 
     prompt_sap = PromptTemplate.from_template(template= template_str, partial_variables={"contexto":final_ia_context,"pergunta":refected_user_query,"formato_instrucoes": json_parser.get_format_instructions()})
 
-    chain = prompt_sap | llm
-    
-    response = chain.invoke({})
+    chain = prompt_sap | llm | json_parser
+
+    try:
+        response = chain.invoke({})
+    except Exception as e:
+        # Caso o Qwen 3B gere um JSON inválido
+        print(f"Erro ao parsear JSON: {e}")
+        response = {
+            "codigo": "",
+            "explicacao": "Erro de formatação na resposta da IA.",
+            "visualizacao": {"tipo_grafico": "bar", "cenario": "default", "titulo": "Erro"}
+        }
+
+    viz_config = response.get("visualizacao", {})
+    cenario_ia = viz_config.get("cenario", "default")
+    tipo_ia = viz_config.get("tipo_grafico", "bar")
+    titulo_ia = viz_config.get("titulo", "Análise de Dados")
+
+    chart = get_chart_data(
+        cenario=cenario_ia, 
+        tipo_grafico=tipo_ia, 
+        titulo_ia=titulo_ia
+    )
 
     return {
         "tables_identified": tables_identified,
-        "generated_script": response,
+        "generated_script": response.get("codigo", ""), 
+        "explanation": response.get("explicacao", ""),
+        "chart": chart, 
         "script_type": "SQL"
     }
