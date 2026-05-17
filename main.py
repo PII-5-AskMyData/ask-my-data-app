@@ -11,10 +11,16 @@ def start_streamlit():
     env = os.environ.copy()
     
     # Roda o Streamlit em modo headless (sem abrir o browser nativo automaticamente)
+    kwargs = {}
+    if os.name == 'nt':
+        kwargs['creationflags'] = subprocess.CREATE_NEW_PROCESS_GROUP
+    else:
+        kwargs['preexec_fn'] = os.setsid
+
     process = subprocess.Popen(
         [sys.executable, "-m", "streamlit", "run", app_path, "--server.port", "8501", "--server.headless", "true"],
         env=env,
-        preexec_fn=os.setsid 
+        **kwargs
     )
 
     return process
@@ -32,10 +38,13 @@ def wait_for_streamlit(url="http://localhost:8501", timeout=20):
 def stop_streamlit(process):
     if process and process.poll() is None:
         try:
-            os.killpg(os.getpgid(process.pid), signal.SIGTERM)
+            if os.name == 'nt':
+                process.send_signal(signal.CTRL_BREAK_EVENT)
+            else:
+                os.killpg(os.getpgid(process.pid), signal.SIGTERM)
             process.wait(timeout=5)
         except:
-            os.killpg(os.getpgid(process.pid), signal.SIGKILL)
+            process.kill()
 
 if __name__ == '__main__':
     # Usar pywebview como empacotador desktop de um servidor web interno  
@@ -44,7 +53,7 @@ if __name__ == '__main__':
     if wait_for_streamlit():
         print("Iniciando janela WebView da aplicacao...")
         window = webview.create_window("Ask My Data", "http://localhost:8501")
-        webview.start(gui="gtk")
+        webview.start()
     else:
         print("Falha ao iniciar Streamlit.")
 

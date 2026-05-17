@@ -30,6 +30,7 @@ def _render_sidebar():
 
         pages = {
             "consulta": ("", "Consulta SQL"),
+            "salvas": ("", "Queries Salvas"),
             "guia": ("", "Guia de Queries"),
             "schema": ("", "Schema do Banco"),
         }
@@ -346,7 +347,103 @@ ORDER BY "Total" DESC;""",
 
 
 # ─────────────────────────────────────────────────────────────
-#   SEÇÃO 3: SCHEMA PREVIEW
+#  SEÇÃO 3: QUERIES SALVAS
+# ─────────────────────────────────────────────────────────────
+def load_saved_queries():
+    import os, json
+    if os.path.exists("data/saved_queries.json"):
+        with open("data/saved_queries.json", "r", encoding="utf-8") as f:
+            return json.load(f)
+    return []
+
+def save_saved_queries(queries):
+    import json
+    with open("data/saved_queries.json", "w", encoding="utf-8") as f:
+        json.dump(queries, f, ensure_ascii=False, indent=4)
+
+def _render_salvas():
+    st.markdown(
+        "<div class='animate-in'>"
+        "<div class='title-gradient'>Queries Salvas</div>"
+        "<p class='subtitle'>Gerencie e edite suas consultas SQL favoritas</p>"
+        "</div>",
+        unsafe_allow_html=True,
+    )
+    st.markdown("<div style='height: 16px;'></div>", unsafe_allow_html=True)
+
+    # CSS para deixar o text_area com cara de editor de código (monospace + tema escuro)
+    st.markdown(
+        """
+        <style>
+            div[data-testid="stTextArea"] textarea {
+                font-family: 'Consolas', 'Courier New', monospace;
+                background-color: #1e1e1e !important;
+                color: #d4d4d4 !important;
+                border: 1px solid #333 !important;
+            }
+        </style>
+        """,
+        unsafe_allow_html=True
+    )
+
+    if "saved_queries" not in st.session_state:
+        st.session_state["saved_queries"] = load_saved_queries()
+
+    # Formulário para adicionar nova
+    with st.expander("➕ Adicionar Nova Query", expanded=False):
+        with st.form("new_query_form", clear_on_submit=True):
+            ntitle = st.text_input("Título", placeholder="Ex: Vendas por Mês")
+            ndesc = st.text_input("Descrição", placeholder="O que esta query faz?")
+            nsql = st.text_area("SQL", placeholder="SELECT * FROM ...", height=150)
+            
+            submit = st.form_submit_button("Salvar Query", type="primary")
+            if submit:
+                if ntitle.strip() and nsql.strip():
+                    st.session_state["saved_queries"].append({
+                        "title": ntitle,
+                        "description": ndesc,
+                        "sql": nsql
+                    })
+                    save_saved_queries(st.session_state["saved_queries"])
+                    st.success("Query salva com sucesso!")
+                    st.rerun()
+                else:
+                    st.error("O Título e o SQL são obrigatórios.")
+
+    st.markdown("<hr>", unsafe_allow_html=True)
+
+    # Lista de queries salvas
+    queries = st.session_state["saved_queries"]
+    
+    if not queries:
+        st.info("Nenhuma query salva ainda. Use o botão acima para adicionar sua primeira query.")
+    else:
+        for i, q in enumerate(queries):
+            with st.expander(f"📌 {q['title']}", expanded=False):
+                new_title = st.text_input("Título", value=q['title'], key=f"edit_title_{i}")
+                new_desc = st.text_input("Descrição", value=q['description'], key=f"edit_desc_{i}")
+                new_sql = st.text_area("SQL", value=q['sql'], height=150, key=f"edit_sql_{i}")
+                
+                col1, col2 = st.columns([1, 1])
+                with col1:
+                    if st.button("💾 Salvar Alterações", key=f"save_btn_{i}", use_container_width=True):
+                        st.session_state["saved_queries"][i] = {
+                            "title": new_title,
+                            "description": new_desc,
+                            "sql": new_sql
+                        }
+                        save_saved_queries(st.session_state["saved_queries"])
+                        st.success("Alterações salvas!")
+                        st.rerun()
+                with col2:
+                    if st.button("🗑️ Excluir", key=f"del_btn_{i}", type="secondary", use_container_width=True):
+                        st.session_state["saved_queries"].pop(i)
+                        save_saved_queries(st.session_state["saved_queries"])
+                        st.rerun()
+
+
+# ─────────────────────────────────────────────────────────────
+#   SEÇÃO 4: SCHEMA PREVIEW
 # ─────────────────────────────────────────────────────────────
 def _render_schema():
     st.markdown(
@@ -426,6 +523,8 @@ def render():
 
     if page == "consulta":
         _render_consulta()
+    elif page == "salvas":
+        _render_salvas()
     elif page == "guia":
         _render_guia()
     elif page == "schema":
