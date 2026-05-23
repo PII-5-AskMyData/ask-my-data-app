@@ -5,3 +5,5 @@ langchain-chroma
 pywebview
 python-dotenv
 pymongo[srv]
+python-dotenv
+pymongo[srv]
