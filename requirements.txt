@@ -3,3 +3,5 @@ langchain
 langchain-ollama
 langchain-chroma
 pywebview
+python-dotenv
+pymongo[srv]
