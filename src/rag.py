@@ -263,6 +263,19 @@ def get_chart_data(cenario: str, tipo_grafico: str, titulo_ia: str):
     }
 
 
+def _build_error_result(message: str, translated_query: str) -> dict:
+    return {
+        "error": True,
+        "error_message": message,
+        "tables_identified": [],
+        "generated_script": "",
+        "explanation": "",
+        "chart": None,
+        "script_type": "SQL",
+        "translated_query": translated_query,
+    }
+
+
 def translate_to_sap(user_querry: str) -> str:
     """
     Pré-processa a string do usuário traduzindo jargões de negócio
@@ -316,24 +329,30 @@ def translate_to_sap(user_querry: str) -> str:
 
 def process_user_query(query: str):
     """Função principal chamada pelo Streamlit para orquestrar o agente RAG."""
-    db = get_vector_store()
-
     refected_user_query = translate_to_sap(user_querry=query)
     print("Pergunta traduzida: ", refected_user_query)
 
-    retriver = db.as_retriever(
-        search_type="similarity",
-        search_kwargs={
-            # "score_threshold": 0.55,
-            "k": 3,
-            # "fetch_k": 15,
-            # "lambda_mult": 0.65
-        },
-    )
+    try:
+        db = get_vector_store()
 
-    tables_identified = []
-    text_for_context = []
-    if db:
+        if db is None:
+            return _build_error_result(
+                "O dicionário SAP local não está disponível. Verifique se o arquivo data/sap_dictionary.json existe e tente novamente.",
+                refected_user_query,
+            )
+
+        retriver = db.as_retriever(
+            search_type="similarity",
+            search_kwargs={
+                # "score_threshold": 0.55,
+                "k": 3,
+                # "fetch_k": 15,
+                # "lambda_mult": 0.65
+            },
+        )
+
+        tables_identified = []
+        text_for_context = []
         # Recuperacao semantica por RAG
         results = retriver.invoke(refected_user_query)
         for res in results:
@@ -346,52 +365,58 @@ def process_user_query(query: str):
             )
             text_for_context.append(res.page_content)
         final_ia_context = "\n\n".join(text_for_context)
-    else:
-        tables_identified = [
-            {"name": "Erro", "description": "Dicionario de dados nao encontrado"}
-        ]
-        final_ia_context = "Dicionário de dados não encontrado."
 
-    prompt_sap = PromptTemplate.from_template(
-        template=template_str,
-        partial_variables={
-            "contexto": final_ia_context,
-            "pergunta": refected_user_query,
-            "formato_instrucoes": json_parser.get_format_instructions(),
-        },
-    )
-
-    chain = prompt_sap | llm | json_parser
-
-    try:
-        response = chain.invoke({})
-    except Exception as e:
-        # Caso o Qwen 3B gere um JSON inválido
-        print(f"Erro ao parsear JSON: {e}")
-        response = {
-            "codigo": "",
-            "explicacao": "Erro de formatação na resposta da IA.",
-            "visualizacao": {
-                "tipo_grafico": "bar",
-                "cenario": "default",
-                "titulo": "Erro",
+        prompt_sap = PromptTemplate.from_template(
+            template=template_str,
+            partial_variables={
+                "contexto": final_ia_context,
+                "pergunta": refected_user_query,
+                "formato_instrucoes": json_parser.get_format_instructions(),
             },
+        )
+
+        chain = prompt_sap | llm | json_parser
+
+        try:
+            response = chain.invoke({})
+        except ConnectionError:
+            return _build_error_result(
+                "Não foi possível conectar ao Ollama. Verifique se o serviço está em execução e tente novamente.",
+                refected_user_query,
+            )
+        except Exception as e:
+            # Caso o Qwen 3B gere um JSON inválido ou outra falha na geração
+            print(f"Erro ao processar a resposta da IA: {e}")
+            return _build_error_result(
+                "A IA não conseguiu gerar a consulta agora. Tente novamente em instantes.",
+                refected_user_query,
+            )
+
+        viz_config = response.get("visualizacao", {})
+        cenario_ia = viz_config.get("cenario", "default")
+        tipo_ia = viz_config.get("tipo_grafico", "bar")
+        titulo_ia = viz_config.get("titulo", "Análise de Dados")
+
+        chart = get_chart_data(
+            cenario=cenario_ia, tipo_grafico=tipo_ia, titulo_ia=titulo_ia
+        )
+
+        return {
+            "tables_identified": tables_identified,
+            "generated_script": response.get("codigo", ""),
+            "explanation": response.get("explicacao", ""),
+            "chart": chart,
+            "script_type": "SQL",
+            "translated_query": refected_user_query,
         }
-
-    viz_config = response.get("visualizacao", {})
-    cenario_ia = viz_config.get("cenario", "default")
-    tipo_ia = viz_config.get("tipo_grafico", "bar")
-    titulo_ia = viz_config.get("titulo", "Análise de Dados")
-
-    chart = get_chart_data(
-        cenario=cenario_ia, tipo_grafico=tipo_ia, titulo_ia=titulo_ia
-    )
-
-    return {
-        "tables_identified": tables_identified,
-        "generated_script": response.get("codigo", ""),
-        "explanation": response.get("explicacao", ""),
-        "chart": chart,
-        "script_type": "SQL",
-        "translated_query": refected_user_query,
-    }
+    except ConnectionError:
+        return _build_error_result(
+            "Não foi possível conectar ao Ollama. Verifique se o serviço está em execução e tente novamente.",
+            refected_user_query,
+        )
+    except Exception as e:
+        print(f"Erro inesperado ao processar a consulta: {e}")
+        return _build_error_result(
+            "Ocorreu um erro ao processar sua consulta. Tente novamente.",
+            refected_user_query,
+        )

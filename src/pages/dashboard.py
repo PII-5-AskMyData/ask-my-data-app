@@ -140,6 +140,14 @@ def _render_consulta():
             with st.spinner("Analisando intenção e buscando catálogo SAP..."):
                 result = process_user_query(query)
 
+            if result.get("error"):
+                st.error(
+                    result.get(
+                        "error_message", "Não foi possível processar a consulta."
+                    )
+                )
+                return
+
             interaction_service.save_query_run(
                 st.session_state.get("current_user"),
                 st.session_state.get("session_id"),
