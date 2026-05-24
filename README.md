@@ -34,6 +34,27 @@ As variáveis principais ficam no `.env`:
 - `MONGO_CONVERSATIONS_COLLECTION`
 - `MONGO_SAVED_QUERIES_COLLECTION`
 
+## Pré-requisitos
+
+Antes de rodar o projeto, garanta que você tenha instalado:
+
+- Python 3.10 ou superior
+- Ollama com o modelo `qwen2.5-coder:3b`
+- MongoDB Atlas ou MongoDB local
+- Um arquivo `.env` na raiz do projeto
+
+## Exemplo de `.env`
+
+Use este modelo como base para o seu arquivo local:
+
+```Bash
+MONGO_URI=mongodb+srv://<user>:<password>@<cluster>/<database>?retryWrites=true&w=majority
+MONGO_DB_NAME=ask_my_data
+MONGO_USERS_COLLECTION=users
+MONGO_CONVERSATIONS_COLLECTION=conversation_history
+MONGO_SAVED_QUERIES_COLLECTION=saved_queries
+```
+
 ## Como contribuir
 
 ### Baixando o Ollama:
@@ -75,8 +96,48 @@ pip install -r requirements.txt
 
 ```Bash
 python3 -m venv venv
-source venv\Scripts\activate
+source venv/bin/activate
 pip install -r requirements.txt
 ```
+
+## Como rodar o projeto
+
+Depois de configurar o ambiente e o `.env`, você pode iniciar a aplicação de duas formas:
+
+### 1. Rodar pelo Streamlit
+
+**No Windows (PowerShell ou Prompt):**
+
+```Bash
+venv\Scripts\activate
+streamlit run app.py
+```
+
+**No Mac/Linux:**
+
+```Bash
+source venv/bin/activate
+streamlit run app.py
+```
+
+### 2. Rodar como desktop app
+
+Se preferir abrir a interface em uma janela desktop, execute:
+
+**No Windows:**
+
+```Bash
+venv\Scripts\activate
+python main.py
+```
+
+**No Mac/Linux:**
+
+```Bash
+source venv/bin/activate
+python main.py
+```
+
+Se o Streamlit abrir sozinho no navegador, o projeto já está funcionando corretamente.
 
 TODO: futuras instruções e adições sobre o projeto
