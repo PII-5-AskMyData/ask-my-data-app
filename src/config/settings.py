@@ -15,6 +15,8 @@ class MongoSettings:
     uri: str | None
     database_name: str
     users_collection: str
+    conversations_collection: str
+    saved_queries_collection: str
 
 
 @lru_cache(maxsize=1)
@@ -23,4 +25,10 @@ def get_mongo_settings() -> MongoSettings:
         uri=os.getenv("MONGO_URI") or None,
         database_name=os.getenv("MONGO_DB_NAME", "ask_my_data"),
         users_collection=os.getenv("MONGO_USERS_COLLECTION", "users"),
+        conversations_collection=os.getenv(
+            "MONGO_CONVERSATIONS_COLLECTION", "conversation_history"
+        ),
+        saved_queries_collection=os.getenv(
+            "MONGO_SAVED_QUERIES_COLLECTION", "saved_queries"
+        ),
     )

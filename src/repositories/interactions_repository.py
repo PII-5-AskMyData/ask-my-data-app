@@ -28,7 +28,9 @@ class InteractionsRepository:
         except PyMongoError:
             return
 
-    def list_interactions(self, username: str | None = None, limit: int = 25) -> list[dict]:
+    def list_interactions(
+        self, username: str | None = None, limit: int = 25
+    ) -> list[dict]:
         if not self.available:
             return []
 

@@ -390,9 +390,15 @@ def _render_historico():
 
     for item in history:
         created_at = item.get("created_at")
-        created_at_text = created_at.strftime("%d/%m/%Y %H:%M:%S") if hasattr(created_at, "strftime") else "Data não informada"
+        created_at_text = (
+            created_at.strftime("%d/%m/%Y %H:%M:%S")
+            if hasattr(created_at, "strftime")
+            else "Data não informada"
+        )
 
-        with st.expander(f"🧠 {item.get('user_query', 'Consulta sem título')}", expanded=False):
+        with st.expander(
+            f"🧠 {item.get('user_query', 'Consulta sem título')}", expanded=False
+        ):
             st.caption(created_at_text)
             st.write(item.get("user_query", ""))
 
