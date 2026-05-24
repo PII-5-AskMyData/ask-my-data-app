@@ -1,5 +1,6 @@
+import base64
+
 import streamlit as st
-import streamlit.components.v1 as components
 from src.styles import get_global_css
 from src.repositories.auth_repository import AuthRepository
 
@@ -367,6 +368,12 @@ def _get_carousel_component_html():
     """
 
 
+def _get_carousel_component_src():
+    carousel_html = _get_carousel_component_html().strip().encode("utf-8")
+    encoded_html = base64.b64encode(carousel_html).decode("ascii")
+    return f"data:text/html;base64,{encoded_html}"
+
+
 def _get_brand_header():
     """HTML do cabeçalho da marca no painel de login."""
     return """
@@ -394,11 +401,7 @@ def render():
 
     with col_left:
         # Altura declarada de 700px no desktop, mas sobrescrita pelo CSS para 380px no mobile
-        components.html(
-            _get_carousel_component_html(),
-            height=700,
-            scrolling=False,
-        )
+        st.iframe(_get_carousel_component_src(), height=700)
 
     with col_right:
         # Espaçamento gerenciado por CSS para não criar um buraco negro no celular
