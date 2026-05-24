@@ -4,10 +4,19 @@ dashboard.py — Página principal do Ask My Data com 3 seções:
   2. Guia SQL (exemplos em português)
   3. Schema Preview (tabelas e tipos)
 """
+
 import streamlit as st
 import pandas as pd
 from src.styles import get_global_css
 from src.rag import process_user_query, get_schema_preview, get_schema_dataframe
+from src.services.interaction_service import InteractionService
+from src.repositories.interactions_repository import InteractionsRepository
+from src.repositories.saved_queries_repository import SavedQueriesRepository
+
+
+interaction_service = InteractionService()
+interactions_repository = InteractionsRepository()
+saved_queries_repository = SavedQueriesRepository()
 
 
 # ─────────────────────────────────────────────────────────────
@@ -26,20 +35,22 @@ def _render_sidebar():
             unsafe_allow_html=True,
         )
 
-        st.markdown("<div class='section-label'>Navegação</div>", unsafe_allow_html=True)
+        st.markdown(
+            "<div class='section-label'>Navegação</div>", unsafe_allow_html=True
+        )
 
         pages = {
             "consulta": ("", "Consulta SQL"),
+            "historico": ("", "Histórico de Conversas"),
             "salvas": ("", "Queries Salvas"),
             "guia": ("", "Guia de Queries"),
             "schema": ("", "Schema do Banco"),
         }
 
-        current = st.session_state.get("dashboard_page", "consulta")
-
         for key, (icon, label) in pages.items():
-            active_class = "active" if current == key else ""
-            if st.button(f"{icon}  {label}", key=f"nav_{key}", use_container_width=True):
+            if st.button(
+                f"{icon}  {label}", key=f"nav_{key}", use_container_width=True
+            ):
                 st.session_state["dashboard_page"] = key
                 st.rerun()
 
@@ -68,6 +79,8 @@ def _render_sidebar():
 
         if st.button("Sair", use_container_width=True, type="secondary"):
             st.session_state["logged_in"] = False
+            st.session_state["current_user"] = None
+            st.session_state["current_user_display_name"] = None
             st.session_state["dashboard_page"] = "consulta"
             st.rerun()
 
@@ -115,7 +128,9 @@ def _render_consulta():
 
         col_btn, _ = st.columns([1, 3])
         with col_btn:
-            submit = st.form_submit_button("Gerar Script", type="primary", use_container_width=True)
+            submit = st.form_submit_button(
+                "Gerar Script", type="primary", use_container_width=True
+            )
 
     # Resultados
     if submit:
@@ -124,6 +139,22 @@ def _render_consulta():
         else:
             with st.spinner("Analisando intenção e buscando catálogo SAP..."):
                 result = process_user_query(query)
+
+            if result.get("error"):
+                st.error(
+                    result.get(
+                        "error_message", "Não foi possível processar a consulta."
+                    )
+                )
+                return
+
+            interaction_service.save_query_run(
+                st.session_state.get("current_user"),
+                st.session_state.get("session_id"),
+                query,
+                result.get("translated_query", query),
+                result,
+            )
 
             st.markdown("<hr>", unsafe_allow_html=True)
 
@@ -145,8 +176,8 @@ def _render_consulta():
                         st.markdown(
                             f"""
                             <div class="table-card">
-                                <div class="title">{table['name']}</div>
-                                <div class="desc">{table['description']}</div>
+                                <div class="title">{table["name"]}</div>
+                                <div class="desc">{table["description"]}</div>
                             </div>
                             """,
                             unsafe_allow_html=True,
@@ -335,9 +366,9 @@ ORDER BY "Total" DESC;""",
                 st.markdown(
                     f"""
                     <div class="guide-card">
-                        <div class="tag">{ex['category']}</div>
-                        <div class="gtitle">{ex['title']}</div>
-                        <div class="gdesc">{ex['description']}</div>
+                        <div class="tag">{ex["category"]}</div>
+                        <div class="gtitle">{ex["title"]}</div>
+                        <div class="gdesc">{ex["description"]}</div>
                     </div>
                     """,
                     unsafe_allow_html=True,
@@ -347,20 +378,70 @@ ORDER BY "Total" DESC;""",
 
 
 # ─────────────────────────────────────────────────────────────
+#  SEÇÃO 3: HISTÓRICO DE CONVERSAS
+# ─────────────────────────────────────────────────────────────
+def _render_historico():
+    st.markdown(
+        "<div class='animate-in'>"
+        "<div class='title-gradient'>Histórico de Conversas</div>"
+        "<p class='subtitle'>Veja as perguntas feitas e os scripts gerados pela IA</p>"
+        "</div>",
+        unsafe_allow_html=True,
+    )
+
+    st.markdown("<div style='height: 16px;'></div>", unsafe_allow_html=True)
+
+    username = st.session_state.get("current_user")
+    history = interactions_repository.list_interactions(username=username, limit=50)
+
+    if not history:
+        st.info("Nenhuma conversa encontrada para este usuário.")
+        return
+
+    for item in history:
+        created_at = item.get("created_at")
+        created_at_text = (
+            created_at.strftime("%d/%m/%Y %H:%M:%S")
+            if hasattr(created_at, "strftime")
+            else "Data não informada"
+        )
+
+        with st.expander(
+            f"🧠 {item.get('user_query', 'Consulta sem título')}", expanded=False
+        ):
+            st.caption(created_at_text)
+            st.write(item.get("user_query", ""))
+
+            translated_query = item.get("translated_query")
+            if translated_query:
+                st.code(translated_query, language="text")
+
+            st.code(item.get("generated_script", ""), language="sql")
+            st.caption(item.get("explanation", ""))
+
+            tables = item.get("tables_identified", [])
+            if tables:
+                for table in tables:
+                    st.markdown(
+                        f"<div class='table-card'><div class='title'>{table.get('name', 'Tabela')}</div><div class='desc'>{table.get('description', '')}</div></div>",
+                        unsafe_allow_html=True,
+                    )
+
+            chart = item.get("chart") or {}
+            if chart:
+                st.write(
+                    {
+                        "tipo": chart.get("chart_type"),
+                        "titulo": chart.get("title"),
+                        "x": chart.get("x"),
+                        "y": chart.get("y"),
+                    }
+                )
+
+
+# ─────────────────────────────────────────────────────────────
 #  SEÇÃO 3: QUERIES SALVAS
 # ─────────────────────────────────────────────────────────────
-def load_saved_queries():
-    import os, json
-    if os.path.exists("data/saved_queries.json"):
-        with open("data/saved_queries.json", "r", encoding="utf-8") as f:
-            return json.load(f)
-    return []
-
-def save_saved_queries(queries):
-    import json
-    with open("data/saved_queries.json", "w", encoding="utf-8") as f:
-        json.dump(queries, f, ensure_ascii=False, indent=4)
-
 def _render_salvas():
     st.markdown(
         "<div class='animate-in'>"
@@ -383,11 +464,17 @@ def _render_salvas():
             }
         </style>
         """,
-        unsafe_allow_html=True
+        unsafe_allow_html=True,
     )
 
-    if "saved_queries" not in st.session_state:
-        st.session_state["saved_queries"] = load_saved_queries()
+    username = st.session_state.get("current_user")
+    if not username:
+        st.info("Faça login para salvar e gerenciar suas queries.")
+        return
+
+    st.session_state["saved_queries"] = saved_queries_repository.list_saved_queries(
+        username=username
+    )
 
     # Formulário para adicionar nova
     with st.expander("➕ Adicionar Nova Query", expanded=False):
@@ -395,16 +482,16 @@ def _render_salvas():
             ntitle = st.text_input("Título", placeholder="Ex: Vendas por Mês")
             ndesc = st.text_input("Descrição", placeholder="O que esta query faz?")
             nsql = st.text_area("SQL", placeholder="SELECT * FROM ...", height=150)
-            
+
             submit = st.form_submit_button("Salvar Query", type="primary")
             if submit:
                 if ntitle.strip() and nsql.strip():
-                    st.session_state["saved_queries"].append({
-                        "title": ntitle,
-                        "description": ndesc,
-                        "sql": nsql
-                    })
-                    save_saved_queries(st.session_state["saved_queries"])
+                    saved_queries_repository.save_saved_query(
+                        username=username,
+                        title=ntitle,
+                        description=ndesc,
+                        sql=nsql,
+                    )
                     st.success("Query salva com sucesso!")
                     st.rerun()
                 else:
@@ -414,31 +501,52 @@ def _render_salvas():
 
     # Lista de queries salvas
     queries = st.session_state["saved_queries"]
-    
+
     if not queries:
-        st.info("Nenhuma query salva ainda. Use o botão acima para adicionar sua primeira query.")
+        st.info(
+            "Nenhuma query salva ainda. Use o botão acima para adicionar sua primeira query."
+        )
     else:
-        for i, q in enumerate(queries):
+        for q in queries:
+            query_id = q["id"]
+
             with st.expander(f"📌 {q['title']}", expanded=False):
-                new_title = st.text_input("Título", value=q['title'], key=f"edit_title_{i}")
-                new_desc = st.text_input("Descrição", value=q['description'], key=f"edit_desc_{i}")
-                new_sql = st.text_area("SQL", value=q['sql'], height=150, key=f"edit_sql_{i}")
-                
+                new_title = st.text_input(
+                    "Título", value=q["title"], key=f"edit_title_{query_id}"
+                )
+                new_desc = st.text_input(
+                    "Descrição", value=q["description"], key=f"edit_desc_{query_id}"
+                )
+                new_sql = st.text_area(
+                    "SQL", value=q["sql"], height=150, key=f"edit_sql_{query_id}"
+                )
+
                 col1, col2 = st.columns([1, 1])
                 with col1:
-                    if st.button("💾 Salvar Alterações", key=f"save_btn_{i}", use_container_width=True):
-                        st.session_state["saved_queries"][i] = {
-                            "title": new_title,
-                            "description": new_desc,
-                            "sql": new_sql
-                        }
-                        save_saved_queries(st.session_state["saved_queries"])
+                    if st.button(
+                        "💾 Salvar Alterações",
+                        key=f"save_btn_{query_id}",
+                        use_container_width=True,
+                    ):
+                        saved_queries_repository.update_saved_query(
+                            query_id=query_id,
+                            username=username,
+                            title=new_title,
+                            description=new_desc,
+                            sql=new_sql,
+                        )
                         st.success("Alterações salvas!")
                         st.rerun()
                 with col2:
-                    if st.button("🗑️ Excluir", key=f"del_btn_{i}", type="secondary", use_container_width=True):
-                        st.session_state["saved_queries"].pop(i)
-                        save_saved_queries(st.session_state["saved_queries"])
+                    if st.button(
+                        "🗑️ Excluir",
+                        key=f"del_btn_{query_id}",
+                        type="secondary",
+                        use_container_width=True,
+                    ):
+                        saved_queries_repository.delete_saved_query(
+                            query_id=query_id, username=username
+                        )
                         st.rerun()
 
 
@@ -460,7 +568,9 @@ def _render_schema():
 
     # ── Cards por tabela ──
     for table in schema:
-        with st.expander(f"📋  {table['table_name']}  —  {table['description']}", expanded=False):
+        with st.expander(
+            f"📋  {table['table_name']}  —  {table['description']}", expanded=False
+        ):
             # Montar o DataFrame das colunas
             rows = []
             for field in table["fields"]:
@@ -479,7 +589,9 @@ def _render_schema():
                 column_config={
                     "Coluna": st.column_config.TextColumn("Coluna", width="medium"),
                     "Tipo": st.column_config.TextColumn("Tipo", width="small"),
-                    "Descrição": st.column_config.TextColumn("Descrição", width="large"),
+                    "Descrição": st.column_config.TextColumn(
+                        "Descrição", width="large"
+                    ),
                 },
             )
 
@@ -523,6 +635,8 @@ def render():
 
     if page == "consulta":
         _render_consulta()
+    elif page == "historico":
+        _render_historico()
     elif page == "salvas":
         _render_salvas()
     elif page == "guia":

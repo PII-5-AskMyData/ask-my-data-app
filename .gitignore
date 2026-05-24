@@ -144,6 +144,9 @@ ENV/
 env.bak/
 venv.bak/
 
+# Generated local database files
+data/chroma_db/
+
 # Spyder project settings
 .spyderproject
 .spyproject

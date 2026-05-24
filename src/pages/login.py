@@ -1,6 +1,8 @@
+import base64
+
 import streamlit as st
-import streamlit.components.v1 as components
 from src.styles import get_global_css
+from src.repositories.auth_repository import AuthRepository
 
 
 def _get_login_page_css():
@@ -366,6 +368,12 @@ def _get_carousel_component_html():
     """
 
 
+def _get_carousel_component_src():
+    carousel_html = _get_carousel_component_html().strip().encode("utf-8")
+    encoded_html = base64.b64encode(carousel_html).decode("ascii")
+    return f"data:text/html;base64,{encoded_html}"
+
+
 def _get_brand_header():
     """HTML do cabeçalho da marca no painel de login."""
     return """
@@ -381,6 +389,8 @@ def _get_brand_header():
 def render():
     """Renderiza a tela de login com carrossel e formulário responsivo."""
 
+    auth_repository = AuthRepository()
+
     # ── CSS Global + Login ──
     st.markdown(get_global_css(), unsafe_allow_html=True)
     st.markdown(_get_login_page_css(), unsafe_allow_html=True)
@@ -391,11 +401,7 @@ def render():
 
     with col_left:
         # Altura declarada de 700px no desktop, mas sobrescrita pelo CSS para 380px no mobile
-        components.html(
-            _get_carousel_component_html(),
-            height=700,
-            scrolling=False,
-        )
+        st.iframe(_get_carousel_component_src(), height=700)
 
     with col_right:
         # Espaçamento gerenciado por CSS para não criar um buraco negro no celular
@@ -425,13 +431,24 @@ def render():
         st.markdown("<div style='height: 8px;'></div>", unsafe_allow_html=True)
 
         if st.button("Entrar", type="primary", use_container_width=True):
-            st.session_state["logged_in"] = True
-            st.rerun()
+            username = st.session_state.get("login_user", "").strip()
+            password = st.session_state.get("login_pass", "")
+
+            if not username or not password:
+                st.error("Informe usuário e senha.")
+            elif auth_repository.available:
+                user = auth_repository.authenticate(username, password)
+                if user:
+                    st.session_state["logged_in"] = True
+                    st.session_state["current_user"] = user["username"]
+                    st.session_state["current_user_display_name"] = user["display_name"]
+                    st.rerun()
+                else:
+                    st.error("Usuário ou senha inválidos.")
+            else:
+                st.error("MongoDB não configurado.")
 
         st.markdown(
-            "<div class='version-label'>"
-            "v1.0 · Powered by LangChain + ChromaDB"
-            "</div>",
+            "<div class='version-label'>v1.0 · Powered by LangChain + ChromaDB</div>",
             unsafe_allow_html=True,
         )
-        
