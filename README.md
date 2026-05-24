@@ -1,6 +1,6 @@
 # Ask My Data
 
-TODO: Descrição do projeto
+Aplicação Streamlit para consultas em linguagem natural sobre dados SAP, com geração automática de SQL, gráficos e histórico por usuário.
 
 **Estrutura de pastas:**
 
@@ -17,6 +17,22 @@ ask-my-data-app/
 └── .gitignore
 
 ```
+
+## Persistência MongoDB
+
+O projeto usa MongoDB para autenticação e armazenamento do fluxo do usuário:
+
+- `users`: login e senha
+- `conversation_history`: consultas, SQL gerado, explicação e gráfico estimado
+- `saved_queries`: queries salvas por usuário
+
+As variáveis principais ficam no `.env`:
+
+- `MONGO_URI`
+- `MONGO_DB_NAME`
+- `MONGO_USERS_COLLECTION`
+- `MONGO_CONVERSATIONS_COLLECTION`
+- `MONGO_SAVED_QUERIES_COLLECTION`
 
 ## Como contribuir
 
