@@ -1,6 +1,7 @@
 from datetime import datetime, timezone
 
 from bson import ObjectId
+from pymongo import ASCENDING, DESCENDING
 from pymongo.errors import PyMongoError
 
 from src.config.settings import get_mongo_settings
@@ -11,10 +12,28 @@ class SavedQueriesRepository:
     def __init__(self) -> None:
         self.database = get_mongo_database()
         self.settings = get_mongo_settings()
+        self._ensure_indexes()
 
     @property
     def available(self) -> bool:
         return is_mongo_enabled() and self.database is not None
+
+    def _ensure_indexes(self) -> None:
+        if not self.available:
+            return
+
+        try:
+            collection = self.database[self.settings.saved_queries_collection]
+            collection.create_index(
+                [("username", ASCENDING), ("created_at", DESCENDING)],
+                name="idx_saved_queries_username_created_at",
+            )
+            collection.create_index(
+                [("username", ASCENDING), ("updated_at", DESCENDING)],
+                name="idx_saved_queries_username_updated_at",
+            )
+        except PyMongoError:
+            return
 
     def list_saved_queries(self, username: str | None = None) -> list[dict]:
         if not self.available:
