@@ -10,9 +10,11 @@ import pandas as pd
 from src.styles import get_global_css
 from src.rag import process_user_query, get_schema_preview, get_schema_dataframe
 from src.services.interaction_service import InteractionService
+from src.repositories.interactions_repository import InteractionsRepository
 
 
 interaction_service = InteractionService()
+interactions_repository = InteractionsRepository()
 
 
 # ─────────────────────────────────────────────────────────────
@@ -37,15 +39,13 @@ def _render_sidebar():
 
         pages = {
             "consulta": ("", "Consulta SQL"),
+            "historico": ("", "Histórico de Conversas"),
             "salvas": ("", "Queries Salvas"),
             "guia": ("", "Guia de Queries"),
             "schema": ("", "Schema do Banco"),
         }
 
-        current = st.session_state.get("dashboard_page", "consulta")
-
         for key, (icon, label) in pages.items():
-            active_class = "active" if current == key else ""
             if st.button(
                 f"{icon}  {label}", key=f"nav_{key}", use_container_width=True
             ):
@@ -368,10 +368,67 @@ ORDER BY "Total" DESC;""",
 
 
 # ─────────────────────────────────────────────────────────────
+#  SEÇÃO 3: HISTÓRICO DE CONVERSAS
+# ─────────────────────────────────────────────────────────────
+def _render_historico():
+    st.markdown(
+        "<div class='animate-in'>"
+        "<div class='title-gradient'>Histórico de Conversas</div>"
+        "<p class='subtitle'>Veja as perguntas feitas e os scripts gerados pela IA</p>"
+        "</div>",
+        unsafe_allow_html=True,
+    )
+
+    st.markdown("<div style='height: 16px;'></div>", unsafe_allow_html=True)
+
+    username = st.session_state.get("current_user")
+    history = interactions_repository.list_interactions(username=username, limit=50)
+
+    if not history:
+        st.info("Nenhuma conversa encontrada para este usuário.")
+        return
+
+    for item in history:
+        created_at = item.get("created_at")
+        created_at_text = created_at.strftime("%d/%m/%Y %H:%M:%S") if hasattr(created_at, "strftime") else "Data não informada"
+
+        with st.expander(f"🧠 {item.get('user_query', 'Consulta sem título')}", expanded=False):
+            st.caption(created_at_text)
+            st.write(item.get("user_query", ""))
+
+            translated_query = item.get("translated_query")
+            if translated_query:
+                st.code(translated_query, language="text")
+
+            st.code(item.get("generated_script", ""), language="sql")
+            st.caption(item.get("explanation", ""))
+
+            tables = item.get("tables_identified", [])
+            if tables:
+                for table in tables:
+                    st.markdown(
+                        f"<div class='table-card'><div class='title'>{table.get('name', 'Tabela')}</div><div class='desc'>{table.get('description', '')}</div></div>",
+                        unsafe_allow_html=True,
+                    )
+
+            chart = item.get("chart") or {}
+            if chart:
+                st.write(
+                    {
+                        "tipo": chart.get("chart_type"),
+                        "titulo": chart.get("title"),
+                        "x": chart.get("x"),
+                        "y": chart.get("y"),
+                    }
+                )
+
+
+# ─────────────────────────────────────────────────────────────
 #  SEÇÃO 3: QUERIES SALVAS
 # ─────────────────────────────────────────────────────────────
 def load_saved_queries():
-    import os, json
+    import os
+    import json
 
     if os.path.exists("data/saved_queries.json"):
         with open("data/saved_queries.json", "r", encoding="utf-8") as f:
@@ -567,6 +624,8 @@ def render():
 
     if page == "consulta":
         _render_consulta()
+    elif page == "historico":
+        _render_historico()
     elif page == "salvas":
         _render_salvas()
     elif page == "guia":
