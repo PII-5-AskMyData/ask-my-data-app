@@ -4,10 +4,15 @@ dashboard.py — Página principal do Ask My Data com 3 seções:
   2. Guia SQL (exemplos em português)
   3. Schema Preview (tabelas e tipos)
 """
+
 import streamlit as st
 import pandas as pd
 from src.styles import get_global_css
 from src.rag import process_user_query, get_schema_preview, get_schema_dataframe
+from src.services.interaction_service import InteractionService
+
+
+interaction_service = InteractionService()
 
 
 # ─────────────────────────────────────────────────────────────
@@ -26,7 +31,9 @@ def _render_sidebar():
             unsafe_allow_html=True,
         )
 
-        st.markdown("<div class='section-label'>Navegação</div>", unsafe_allow_html=True)
+        st.markdown(
+            "<div class='section-label'>Navegação</div>", unsafe_allow_html=True
+        )
 
         pages = {
             "consulta": ("", "Consulta SQL"),
@@ -39,7 +46,9 @@ def _render_sidebar():
 
         for key, (icon, label) in pages.items():
             active_class = "active" if current == key else ""
-            if st.button(f"{icon}  {label}", key=f"nav_{key}", use_container_width=True):
+            if st.button(
+                f"{icon}  {label}", key=f"nav_{key}", use_container_width=True
+            ):
                 st.session_state["dashboard_page"] = key
                 st.rerun()
 
@@ -68,6 +77,8 @@ def _render_sidebar():
 
         if st.button("Sair", use_container_width=True, type="secondary"):
             st.session_state["logged_in"] = False
+            st.session_state["current_user"] = None
+            st.session_state["current_user_display_name"] = None
             st.session_state["dashboard_page"] = "consulta"
             st.rerun()
 
@@ -115,7 +126,9 @@ def _render_consulta():
 
         col_btn, _ = st.columns([1, 3])
         with col_btn:
-            submit = st.form_submit_button("Gerar Script", type="primary", use_container_width=True)
+            submit = st.form_submit_button(
+                "Gerar Script", type="primary", use_container_width=True
+            )
 
     # Resultados
     if submit:
@@ -124,6 +137,14 @@ def _render_consulta():
         else:
             with st.spinner("Analisando intenção e buscando catálogo SAP..."):
                 result = process_user_query(query)
+
+            interaction_service.save_query_run(
+                st.session_state.get("current_user"),
+                st.session_state.get("session_id"),
+                query,
+                result.get("translated_query", query),
+                result,
+            )
 
             st.markdown("<hr>", unsafe_allow_html=True)
 
@@ -145,8 +166,8 @@ def _render_consulta():
                         st.markdown(
                             f"""
                             <div class="table-card">
-                                <div class="title">{table['name']}</div>
-                                <div class="desc">{table['description']}</div>
+                                <div class="title">{table["name"]}</div>
+                                <div class="desc">{table["description"]}</div>
                             </div>
                             """,
                             unsafe_allow_html=True,
@@ -335,9 +356,9 @@ ORDER BY "Total" DESC;""",
                 st.markdown(
                     f"""
                     <div class="guide-card">
-                        <div class="tag">{ex['category']}</div>
-                        <div class="gtitle">{ex['title']}</div>
-                        <div class="gdesc">{ex['description']}</div>
+                        <div class="tag">{ex["category"]}</div>
+                        <div class="gtitle">{ex["title"]}</div>
+                        <div class="gdesc">{ex["description"]}</div>
                     </div>
                     """,
                     unsafe_allow_html=True,
@@ -351,15 +372,19 @@ ORDER BY "Total" DESC;""",
 # ─────────────────────────────────────────────────────────────
 def load_saved_queries():
     import os, json
+
     if os.path.exists("data/saved_queries.json"):
         with open("data/saved_queries.json", "r", encoding="utf-8") as f:
             return json.load(f)
     return []
 
+
 def save_saved_queries(queries):
     import json
+
     with open("data/saved_queries.json", "w", encoding="utf-8") as f:
         json.dump(queries, f, ensure_ascii=False, indent=4)
+
 
 def _render_salvas():
     st.markdown(
@@ -383,7 +408,7 @@ def _render_salvas():
             }
         </style>
         """,
-        unsafe_allow_html=True
+        unsafe_allow_html=True,
     )
 
     if "saved_queries" not in st.session_state:
@@ -395,15 +420,13 @@ def _render_salvas():
             ntitle = st.text_input("Título", placeholder="Ex: Vendas por Mês")
             ndesc = st.text_input("Descrição", placeholder="O que esta query faz?")
             nsql = st.text_area("SQL", placeholder="SELECT * FROM ...", height=150)
-            
+
             submit = st.form_submit_button("Salvar Query", type="primary")
             if submit:
                 if ntitle.strip() and nsql.strip():
-                    st.session_state["saved_queries"].append({
-                        "title": ntitle,
-                        "description": ndesc,
-                        "sql": nsql
-                    })
+                    st.session_state["saved_queries"].append(
+                        {"title": ntitle, "description": ndesc, "sql": nsql}
+                    )
                     save_saved_queries(st.session_state["saved_queries"])
                     st.success("Query salva com sucesso!")
                     st.rerun()
@@ -414,29 +437,46 @@ def _render_salvas():
 
     # Lista de queries salvas
     queries = st.session_state["saved_queries"]
-    
+
     if not queries:
-        st.info("Nenhuma query salva ainda. Use o botão acima para adicionar sua primeira query.")
+        st.info(
+            "Nenhuma query salva ainda. Use o botão acima para adicionar sua primeira query."
+        )
     else:
         for i, q in enumerate(queries):
             with st.expander(f"📌 {q['title']}", expanded=False):
-                new_title = st.text_input("Título", value=q['title'], key=f"edit_title_{i}")
-                new_desc = st.text_input("Descrição", value=q['description'], key=f"edit_desc_{i}")
-                new_sql = st.text_area("SQL", value=q['sql'], height=150, key=f"edit_sql_{i}")
-                
+                new_title = st.text_input(
+                    "Título", value=q["title"], key=f"edit_title_{i}"
+                )
+                new_desc = st.text_input(
+                    "Descrição", value=q["description"], key=f"edit_desc_{i}"
+                )
+                new_sql = st.text_area(
+                    "SQL", value=q["sql"], height=150, key=f"edit_sql_{i}"
+                )
+
                 col1, col2 = st.columns([1, 1])
                 with col1:
-                    if st.button("💾 Salvar Alterações", key=f"save_btn_{i}", use_container_width=True):
+                    if st.button(
+                        "💾 Salvar Alterações",
+                        key=f"save_btn_{i}",
+                        use_container_width=True,
+                    ):
                         st.session_state["saved_queries"][i] = {
                             "title": new_title,
                             "description": new_desc,
-                            "sql": new_sql
+                            "sql": new_sql,
                         }
                         save_saved_queries(st.session_state["saved_queries"])
                         st.success("Alterações salvas!")
                         st.rerun()
                 with col2:
-                    if st.button("🗑️ Excluir", key=f"del_btn_{i}", type="secondary", use_container_width=True):
+                    if st.button(
+                        "🗑️ Excluir",
+                        key=f"del_btn_{i}",
+                        type="secondary",
+                        use_container_width=True,
+                    ):
                         st.session_state["saved_queries"].pop(i)
                         save_saved_queries(st.session_state["saved_queries"])
                         st.rerun()
@@ -460,7 +500,9 @@ def _render_schema():
 
     # ── Cards por tabela ──
     for table in schema:
-        with st.expander(f"📋  {table['table_name']}  —  {table['description']}", expanded=False):
+        with st.expander(
+            f"📋  {table['table_name']}  —  {table['description']}", expanded=False
+        ):
             # Montar o DataFrame das colunas
             rows = []
             for field in table["fields"]:
@@ -479,7 +521,9 @@ def _render_schema():
                 column_config={
                     "Coluna": st.column_config.TextColumn("Coluna", width="medium"),
                     "Tipo": st.column_config.TextColumn("Tipo", width="small"),
-                    "Descrição": st.column_config.TextColumn("Descrição", width="large"),
+                    "Descrição": st.column_config.TextColumn(
+                        "Descrição", width="large"
+                    ),
                 },
             )
 

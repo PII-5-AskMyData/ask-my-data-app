@@ -19,6 +19,10 @@ if "current_user" not in st.session_state:
     st.session_state["current_user"] = None
 if "current_user_display_name" not in st.session_state:
     st.session_state["current_user_display_name"] = None
+if "session_id" not in st.session_state:
+    import uuid
+
+    st.session_state["session_id"] = str(uuid.uuid4())
 
 # Roteamento
 if not st.session_state["logged_in"]:
