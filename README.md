@@ -34,6 +34,8 @@ As variáveis principais ficam no `.env`:
 - `MONGO_CONVERSATIONS_COLLECTION`
 - `MONGO_SAVED_QUERIES_COLLECTION`
 
+Use o arquivo `.env.example` versionado no repositório como base para criar o seu `.env` local.
+
 ## Pré-requisitos
 
 Antes de rodar o projeto, garanta que você tenha instalado:
@@ -43,17 +45,20 @@ Antes de rodar o projeto, garanta que você tenha instalado:
 - MongoDB Atlas ou MongoDB local
 - Um arquivo `.env` na raiz do projeto
 
-## Exemplo de `.env`
+## Configuração do `.env`
 
-Use este modelo como base para o seu arquivo local:
+1. O projeto já possui um arquivo `.env.example` com as chaves necessárias.
+2. Crie o arquivo `.env` local a partir dele:
 
 ```Bash
-MONGO_URI=mongodb+srv://<user>:<password>@<cluster>/<database>?retryWrites=true&w=majority
-MONGO_DB_NAME=ask_my_data
-MONGO_USERS_COLLECTION=users
-MONGO_CONVERSATIONS_COLLECTION=conversation_history
-MONGO_SAVED_QUERIES_COLLECTION=saved_queries
+# Mac/Linux
+cp .env.example .env
+
+# Windows (PowerShell)
+Copy-Item .env.example .env
 ```
+
+3. Ajuste os valores do `.env` se necessário para o seu ambiente.
 
 ## Como contribuir
 
