@@ -1,6 +1,6 @@
 import base64
-
 import streamlit as st
+import streamlit.components.v1 as components
 from src.styles import get_global_css
 from src.repositories.auth_repository import AuthRepository
 
@@ -15,130 +15,178 @@ def _get_login_page_css():
         [data-testid="collapsedControl"] {display: none !important;}
         footer {display: none !important;}
 
+        .stApp {
+            background-color: #0d1117 !important;
+            background-image: 
+                radial-gradient(circle at 50% 50%, rgba(255,255,255,0.08) 0%, transparent 50%),
+                radial-gradient(circle at 20% 80%, rgba(255,255,255,0.04) 0%, transparent 40%),
+                radial-gradient(circle at 80% 20%, rgba(255,255,255,0.04) 0%, transparent 40%) !important;
+        }
+
+        section[data-testid="stMain"] {
+            display: flex !important;
+            flex-direction: column !important;
+            justify-content: center !important;
+            align-items: center !important;
+            min-height: 100vh !important;
+        }
+
         [data-testid="stMainBlockContainer"] {
             padding: 0 !important;
             max-width: 100% !important;
+            display: flex !important;
+            flex-direction: column !important;
+            justify-content: center !important;
+            align-items: center !important;
+            width: 100% !important;
         }
         .block-container {
             padding: 0 !important;
             max-width: 100% !important;
+            display: flex !important;
+            justify-content: center !important;
+            align-items: center !important;
         }
 
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
 
-        /* ── Layout Base e Desktop ── */
+        /* ── Glassmorphic Card ── */
         [data-testid="stHorizontalBlock"] {
-            gap: 0 !important;
-            align-items: stretch !important;
+            background: rgba(255, 255, 255, 0.05) !important;
+            backdrop-filter: blur(40px) !important;
+            -webkit-backdrop-filter: blur(40px) !important;
+            border: 1px solid rgba(255, 255, 255, 0.15) !important;
+            border-radius: 24px !important;
+            padding: 60px 40px !important;
+            max-width: 850px !important;
+            width: 90% !important;
+            margin: auto !important;
+            box-shadow: 0 30px 60px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255,255,255,0.1) !important;
+            align-items: center !important;
+            gap: 3rem !important;
+            z-index: 2;
         }
 
         /* ── TELA PEQUENA (MOBILE) ── */
         @media (max-width: 768px) {
             [data-testid="stHorizontalBlock"] {
                 flex-direction: column !important;
-                flex-wrap: nowrap !important;
-                min-height: 100vh !important;
+                padding: 40px 20px !important;
+                gap: 2rem !important;
             }
-            
-            /* Esconder Carrossel no celular */
             [data-testid="stHorizontalBlock"] > [data-testid="stColumn"]:nth-child(1) {
-                display: none !important;
+                display: none !important; /* Hide carousel on mobile */
             }
-
-            /* Login centralizado, ocupando toda tela sem scroll */
             [data-testid="stHorizontalBlock"] > [data-testid="stColumn"]:nth-child(2) {
                 width: 100% !important;
-                min-height: 100vh !important;
-                flex: 1 1 100% !important;
-                display: flex !important; flex-direction: column !important; justify-content: center !important; align-items: center !important;
-                padding: 32px !important;
-            }
-
-            .desktop-spacer { display: none !important; }
-            .mobile-spacer { height: 8px; }
-            .brand-section { margin-bottom: 24px; }
-            .version-label { margin-top: 24px; }
-            
-            /* Compacta inputs no mobile */
-            div[data-testid="stTextInput"] {
-                margin-bottom: -10px !important;
-            }
-
-            /* Move o brilho de fundo para não interferir na legibilidade */
-            .glow-bg-right {
-                top: 70% !important;
-                width: 250px !important;
-                height: 250px !important;
             }
         }
 
-        /* ── Elementos Estéticos ── */
-        .desktop-spacer { height: 10vh; }
-        
-        .glow-bg-right {
-            position: fixed;
-            top: 10%;
-            right: 0;
-            width: 400px;
-            height: 400px;
-            background: radial-gradient(ellipse, rgba(59,130,246,0.06) 0%, transparent 70%);
-            pointer-events: none;
-            z-index: 0;
-        }
-
+        /* Brand section */
         .brand-section {
             text-align: center;
-            margin-bottom: 36px;
-            animation: fadeSlideUp 0.8s ease-out forwards;
-            width: 100%;
+            margin-bottom: 30px;
         }
-
-        @keyframes fadeSlideUp {
-            from { opacity: 0; transform: translateY(30px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        .brand-icon {
-            width: 56px; height: 56px;
-            border-radius: 16px;
-            background: linear-gradient(135deg, #2563EB 0%, #7C3AED 50%, #D946EF 100%);
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.5rem;
-            color: white;
-            margin-bottom: 20px;
-            box-shadow: 0 8px 30px rgba(59,130,246,0.25);
-        }
-
         .brand-name {
-            font-size: 1.8rem;
-            font-weight: 800;
-            letter-spacing: -1px;
-            background: linear-gradient(135deg, #3B82F6 0%, #8B5CF6 50%, #D946EF 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            margin-bottom: 8px;
+            font-size: 2rem;
+            font-weight: 700;
+            color: #FFFFFF;
+            margin-bottom: 4px;
+            letter-spacing: -0.5px;
         }
-
         .brand-sub {
-            color: #475569;
-            font-size: 0.88rem;
+            color: #A0AEC0;
+            font-size: 0.95rem;
             font-weight: 400;
         }
 
-        .login-divider {
-            max-width: 380px;
-            margin: 0 auto 8px;
-            height: 1px;
-            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.06), transparent);
+        /* Inputs (Nuclear Approach) */
+        /* 1. Neutraliza TUDO o que o Streamlit tenta colocar nos elementos internos */
+        div[data-testid="stTextInput"] * {
+            background-color: transparent !important;
+            border: none !important;
+            box-shadow: none !important;
+            outline: none !important;
         }
 
-        .version-label {
+        /* 2. Transforma o contêiner PAI em nossa "Pílula" (Pill) */
+        div[data-testid="stTextInput"] {
+            background-color: rgba(255, 255, 255, 0.05) !important;
+            border: 1px solid rgba(255, 255, 255, 0.2) !important;
+            border-radius: 9999px !important;
+            padding: 8px 16px !important;
+            transition: all 0.3s ease !important;
+            overflow: hidden !important;
+            margin-bottom: 16px !important;
+        }
+
+        /* 3. Estado :focus-within no contêiner PAI (isso reage perfeitamente ao clique no input) */
+        div[data-testid="stTextInput"]:focus-within {
+            border: 1px solid rgba(255, 255, 255, 0.6) !important;
+            background-color: rgba(255, 255, 255, 0.1) !important;
+            box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.2) !important;
+        }
+
+        /* 4. Cor do texto digitado e do placeholder */
+        div[data-testid="stTextInput"] input {
+            color: #FFFFFF !important;
+            font-size: 0.95rem !important;
+            -webkit-text-fill-color: #FFFFFF !important;
+            padding: 4px 0 !important;
+        }
+
+        div[data-testid="stTextInput"] input::placeholder {
+            color: #A0AEC0 !important;
+            -webkit-text-fill-color: #A0AEC0 !important;
+        }
+
+        /* Primary Button */
+        html body div.stApp section[data-testid="stMain"] div.stButton > button {
+            background: linear-gradient(180deg, #FFFFFF 0%, #E2E8F0 100%) !important;
+            color: #000000 !important;
+            border-radius: 9999px !important;
+            border: none !important;
+            padding: 8px 24px !important;
+            font-weight: 600 !important;
+            font-size: 1rem !important;
+            box-shadow: 0 8px 20px rgba(255, 255, 255, 0.15) !important;
+            transition: all 0.3s ease !important;
+            height: 48px !important;
+            margin-top: 8px !important;
+        }
+        html body div.stApp section[data-testid="stMain"] div.stButton > button:hover {
+            transform: translateY(-2px) !important;
+            box-shadow: 0 12px 24px rgba(255, 255, 255, 0.25) !important;
+            background: linear-gradient(180deg, #F8FAFC 0%, #E2E8F0 100%) !important;
+        }
+
+        /* Error Pill */
+        .custom-error-pill {
+            background: rgba(0, 0, 0, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            color: #A0AEC0;
+            padding: 12px;
             text-align: center;
-            margin-top: 28px;
-            color: #334155;
-            font-size: 0.75rem;
+            font-size: 0.9rem;
+            margin-top: 0px;
+            margin-bottom: 20px;
+        }
+
+        /* Version Info */
+        .version-label-container {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            text-align: center;
+            width: 100%;
+            z-index: 1;
+        }
+        .version-label {
+            color: #718096;
+            font-size: 0.8rem;
+            letter-spacing: 0.5px;
         }
     </style>
     """
@@ -160,21 +208,16 @@ def _get_carousel_component_html():
                 width: 100%;
                 height: 100%;
                 overflow: hidden;
-            }
-
-            body {
-                font-family: 'Inter', sans-serif;
                 background: transparent;
+                font-family: 'Inter', sans-serif;
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                color: #E2E8F0;
+                color: #FFFFFF;
             }
 
             .carousel-container {
                 width: 100%;
-                max-width: 90%;
-                padding: 0 clamp(12px, 3vw, 48px);
                 position: relative;
                 overflow: hidden;
             }
@@ -192,95 +235,69 @@ def _get_carousel_component_html():
                 flex-direction: column;
                 align-items: center;
                 text-align: center;
-                padding: 0 clamp(8px, 2vw, 24px);
+                padding: 0 20px;
             }
 
             .slide-icon {
-                width: clamp(56px, 8vw, 110px);
-                height: clamp(56px, 8vw, 110px);
-                border-radius: clamp(16px, 2.5vw, 28px);
+                width: 72px;
+                height: 72px;
+                margin-bottom: 24px;
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                font-size: clamp(1.4rem, 3vw, 3rem);
-                margin-bottom: clamp(16px, 3vh, 40px);
-                position: relative;
-                flex-shrink: 0;
+                filter: drop-shadow(0 0 16px rgba(255,255,255,0.4));
             }
-            .slide-icon::after {
-                content: '';
-                position: absolute;
-                inset: -6px;
-                border-radius: clamp(20px, 3vw, 32px);
-                z-index: -1;
+            .slide-icon svg {
+                width: 100%;
+                height: 100%;
+                fill: none;
+                stroke: #FFFFFF;
+                stroke-width: 1.5;
+                stroke-linecap: round;
+                stroke-linejoin: round;
             }
-
-            .slide-icon.icon-blue { background: linear-gradient(135deg, #2563EB, #3B82F6); box-shadow: 0 8px 30px rgba(37,99,235,0.3); }
-            .slide-icon.icon-purple { background: linear-gradient(135deg, #7C3AED, #8B5CF6); box-shadow: 0 8px 30px rgba(124,58,237,0.3); }
-            .slide-icon.icon-pink { background: linear-gradient(135deg, #DB2777, #D946EF); box-shadow: 0 8px 30px rgba(219,39,119,0.3); }
 
             .slide-title {
-                font-size: clamp(1.1rem, 2.5vw, 2.2rem);
+                font-size: 1.5rem;
                 font-weight: 700;
-                color: #F1F5F9;
-                margin-bottom: clamp(8px, 1.5vh, 18px);
-                letter-spacing: -0.5px;
-                line-height: 1.2;
+                color: #FFFFFF;
+                margin-bottom: 16px;
+                line-height: 1.3;
             }
 
             .slide-desc {
-                color: #94A3B8;
-                font-size: clamp(0.8rem, 1.2vw, 1.1rem);
-                line-height: 1.7;
-                max-width: 90%;
+                color: #A0AEC0;
+                font-size: 0.95rem;
+                line-height: 1.6;
+                font-weight: 400;
             }
 
             .carousel-dots {
                 display: flex;
-                gap: clamp(6px, 1vw, 12px);
+                gap: 8px;
                 justify-content: center;
-                margin-top: clamp(24px, 4vh, 56px);
+                margin-top: 40px;
             }
 
             .c-dot {
-                width: clamp(8px, 1vw, 12px);
-                height: clamp(8px, 1vw, 12px);
+                width: 8px;
+                height: 8px;
                 border-radius: 50%;
-                background: rgba(255,255,255,0.12);
+                background: rgba(255,255,255,0.3);
                 cursor: pointer;
                 transition: all 0.4s ease;
                 border: none;
                 display: inline-block;
             }
-            .c-dot:hover { background: rgba(255,255,255,0.25); }
+            .c-dot:hover { background: rgba(255,255,255,0.6); }
             .c-dot.active {
-                background: #3B82F6;
-                box-shadow: 0 0 12px rgba(59,130,246,0.5);
-                width: clamp(20px, 3vw, 36px);
-                border-radius: 6px;
+                background: #FFFFFF;
+                width: 24px;
+                border-radius: 4px;
+                box-shadow: 0 0 8px rgba(255,255,255,0.8);
             }
-
-            .carousel-progress {
-                width: 100%;
-                max-width: clamp(120px, 20vw, 280px);
-                height: 2px;
-                background: rgba(255,255,255,0.06);
-                border-radius: 2px;
-                margin: clamp(12px, 2vh, 28px) auto 0;
-                overflow: hidden;
-            }
-            .carousel-progress-bar {
-                height: 100%;
-                background: linear-gradient(90deg, #3B82F6, #8B5CF6);
-                border-radius: 2px;
-                width: 0%;
-                animation: progressFill 4.5s linear infinite;
-            }
-            @keyframes progressFill {
-                from { width: 0%; }
-                to { width: 100%; }
-            }
-
+            
+            /* Slide specific animations */
             .carousel-slide { opacity: 0; animation: slideIn 0.7s ease-out 0.2s forwards; }
             @keyframes slideIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
         </style>
@@ -288,28 +305,50 @@ def _get_carousel_component_html():
     <body>
         <div class="carousel-container">
             <div class="carousel-track" id="carouselTrack">
+                <!-- Slide 1 -->
                 <div class="carousel-slide">
-                    <div class="slide-icon icon-blue">💬</div>
-                    <div class="slide-title">Pergunte em linguagem natural</div>
+                    <div class="slide-icon">
+                        <svg viewBox="0 0 24 24">
+                            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                        </svg>
+                    </div>
+                    <div class="slide-title">Pergunte em<br>linguagem natural</div>
                     <div class="slide-desc">
-                        Faça perguntas complexas sobre seus dados usando português simples. 
-                        Nossa IA converte automaticamente em consultas SQL precisas.
+                        Faça perguntas complexas sobre seus<br>
+                        dados usando português simples. Nossa<br>
+                        IA converte automaticamente em<br>
+                        consultas SQL precisas.
                     </div>
                 </div>
+                <!-- Slide 2 -->
                 <div class="carousel-slide">
-                    <div class="slide-icon icon-purple">📊</div>
-                    <div class="slide-title">Visualizações inteligentes</div>
+                    <div class="slide-icon">
+                        <svg viewBox="0 0 24 24">
+                            <line x1="18" y1="20" x2="18" y2="10"></line>
+                            <line x1="12" y1="20" x2="12" y2="4"></line>
+                            <line x1="6" y1="20" x2="6" y2="14"></line>
+                        </svg>
+                    </div>
+                    <div class="slide-title">Visualizações<br>inteligentes</div>
                     <div class="slide-desc">
-                        Gere gráficos e dashboards automaticamente a partir das suas consultas. 
-                        Explore tendências e padrões com facilidade.
+                        Gere gráficos e dashboards<br>
+                        automaticamente a partir das suas consultas.<br>
+                        Explore tendências com facilidade.
                     </div>
                 </div>
+                <!-- Slide 3 -->
                 <div class="carousel-slide">
-                    <div class="slide-icon icon-pink">🔒</div>
-                    <div class="slide-title">Seguro e integrado ao SAP</div>
+                    <div class="slide-icon">
+                        <svg viewBox="0 0 24 24">
+                            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                            <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                        </svg>
+                    </div>
+                    <div class="slide-title">Seguro e<br>integrado ao SAP</div>
                     <div class="slide-desc">
-                        Conectado diretamente ao dicionário de dados SAP, com validação de 
-                        esquemas e controle de acesso integrado.
+                        Conectado diretamente ao dicionário de<br>
+                        dados SAP, com validação de esquemas e<br>
+                        controle de acesso integrado.
                     </div>
                 </div>
             </div>
@@ -318,16 +357,12 @@ def _get_carousel_component_html():
                 <div class="c-dot" onclick="goToSlide(1)"></div>
                 <div class="c-dot" onclick="goToSlide(2)"></div>
             </div>
-            <div class="carousel-progress">
-                <div class="carousel-progress-bar" id="progressBar"></div>
-            </div>
         </div>
 
         <script>
             let currentSlide = 0;
             const totalSlides = 3;
             let autoplayTimer;
-            const progressBar = document.getElementById('progressBar');
 
             function goToSlide(index) {
                 currentSlide = index;
@@ -338,12 +373,6 @@ def _get_carousel_component_html():
                 dots.forEach((dot, i) => {
                     dot.classList.toggle('active', i === index);
                 });
-                
-                if (progressBar) {
-                    progressBar.style.animation = 'none';
-                    progressBar.offsetHeight;
-                    progressBar.style.animation = 'progressFill 4.5s linear infinite';
-                }
                 resetAutoplay();
             }
 
@@ -351,66 +380,39 @@ def _get_carousel_component_html():
 
             function resetAutoplay() {
                 clearInterval(autoplayTimer);
-                autoplayTimer = setInterval(nextSlide, 4500);
-            }
-
-            function sendHeight() {
-                const h = document.body.scrollHeight;
-                window.parent.postMessage({type: 'setFrameHeight', height: h}, '*');
+                autoplayTimer = setInterval(nextSlide, 5000);
             }
 
             resetAutoplay();
-            window.addEventListener('load', sendHeight);
-            window.addEventListener('resize', sendHeight);
         </script>
     </body>
     </html>
     """
 
 
-def _get_carousel_component_src():
-    carousel_html = _get_carousel_component_html().strip().encode("utf-8")
-    encoded_html = base64.b64encode(carousel_html).decode("ascii")
-    return f"data:text/html;base64,{encoded_html}"
-
-
-def _get_brand_header():
-    """HTML do cabeçalho da marca no painel de login."""
-    return """
-    <div class="brand-section">
-        <div class="brand-icon">✦</div>
-        <div class="brand-name">Ask My Data</div>
-        <div class="brand-sub">Why not make it easy?</div>
-    </div>
-    <div class="login-divider"></div>
-    """
-
-
 def render():
-    """Renderiza a tela de login com carrossel e formulário responsivo."""
+    """Renderiza a tela de login com carrossel e formulário responsivo no estilo Glassmorphism."""
 
     auth_repository = AuthRepository()
 
-    # ── CSS Global + Login ──
-    st.markdown(get_global_css(), unsafe_allow_html=True)
+    # ── CSS Login ──
     st.markdown(_get_login_page_css(), unsafe_allow_html=True)
-    st.markdown('<div class="glow-bg-right"></div>', unsafe_allow_html=True)
 
     # ── Layout split ──
-    col_left, col_right = st.columns([1.3, 0.7], gap="small")
+    col_left, col_right = st.columns([1, 1], gap="large")
 
     with col_left:
-        # Altura declarada de 700px no desktop, mas sobrescrita pelo CSS para 380px no mobile
-        st.iframe(_get_carousel_component_src(), height=700)
+        # Altura suficiente para mostrar todo o conteúdo e ícones
+        components.html(_get_carousel_component_html(), height=450)
 
     with col_right:
-        # Espaçamento gerenciado por CSS para não criar um buraco negro no celular
-        st.markdown("<div class='desktop-spacer'></div>", unsafe_allow_html=True)
-
         # Brand header
-        st.markdown(_get_brand_header(), unsafe_allow_html=True)
-
-        st.markdown("<div style='height: 12px;'></div>", unsafe_allow_html=True)
+        st.markdown("""
+        <div class="brand-section">
+            <div class="brand-name">Ask My Data</div>
+            <div class="brand-sub">Why not make it easy?</div>
+        </div>
+        """, unsafe_allow_html=True)
 
         # Campos do formulário
         st.text_input(
@@ -428,14 +430,15 @@ def render():
             key="login_pass",
         )
 
-        st.markdown("<div style='height: 8px;'></div>", unsafe_allow_html=True)
+        # Error placeholder
+        error_container = st.empty()
 
         if st.button("Entrar", type="primary", use_container_width=True):
             username = st.session_state.get("login_user", "").strip()
             password = st.session_state.get("login_pass", "")
 
             if not username or not password:
-                st.error("Informe usuário e senha.")
+                error_container.markdown('<div class="custom-error-pill">Informe usuário e senha.</div>', unsafe_allow_html=True)
             elif auth_repository.available:
                 user = auth_repository.authenticate(username, password)
                 if user:
@@ -444,11 +447,12 @@ def render():
                     st.session_state["current_user_display_name"] = user["display_name"]
                     st.rerun()
                 else:
-                    st.error("Usuário ou senha inválidos.")
+                    error_container.markdown('<div class="custom-error-pill">Usuário ou senha inválidos.</div>', unsafe_allow_html=True)
             else:
-                st.error("MongoDB não configurado.")
+                error_container.markdown('<div class="custom-error-pill">MongoDB não configurado.</div>', unsafe_allow_html=True)
 
-        st.markdown(
-            "<div class='version-label'>v1.0 · Powered by LangChain + ChromaDB</div>",
-            unsafe_allow_html=True,
-        )
+    # ── Version Label fora do card ──
+    st.markdown(
+        "<div class='version-label-container'><div class='version-label'>v1.0 - Powered by LangChain + ChromaDB</div></div>",
+        unsafe_allow_html=True,
+    )
