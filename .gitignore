@@ -69,6 +69,8 @@ instance/
 .env
 .envrc
 .venv
+.venv/
+Venv/
 env/
 venv/
 ENV/
