@@ -145,4 +145,4 @@ python main.py
 
 Se o Streamlit abrir sozinho no navegador, o projeto já está funcionando corretamente.
 
-TODO: futuras instruções e adições sobre o projeto
+TODO: futuras instruções e adições sobre o projeto!
