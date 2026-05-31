@@ -264,7 +264,7 @@ def get_global_css():
             border: none !important;
             box-shadow: none !important;
             outline: none !important;
-        }
+        } 
         div[data-testid="stTextInput"] {
             background-color: rgba(255, 255, 255, 0.05) !important;
             border: 1px solid rgba(255, 255, 255, 0.2) !important;

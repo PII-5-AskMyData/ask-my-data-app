@@ -442,6 +442,7 @@ def _render_historico():
 # ─────────────────────────────────────────────────────────────
 #  SEÇÃO 3: QUERIES SALVAS
 # ─────────────────────────────────────────────────────────────
+
 def _render_salvas():
     st.markdown(
         "<div class='animate-in'>"
