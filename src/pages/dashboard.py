@@ -31,7 +31,7 @@ def _render_sidebar():
             unsafe_allow_html=True,
         )
         st.markdown(
-            "<div style='color: #475569; font-size: 0.8rem; margin-bottom: 30px;'>Plataforma de Inteligência SAP</div>",
+            "<div style='color: #A0AEC0; font-size: 0.8rem; margin-bottom: 30px;'>Plataforma de Inteligência SAP</div>",
             unsafe_allow_html=True,
         )
 
@@ -115,7 +115,7 @@ def _render_consulta():
     # Formulário
     with st.form("query_form", clear_on_submit=False):
         st.markdown(
-            "<div style='color: #CBD5E1; font-weight: 600; font-size: 1rem; margin-bottom: 10px;'>Descreva seu Insight:</div>",
+            "<div style='color: #FFFFFF; font-weight: 600; font-size: 1rem; margin-bottom: 10px;'>Descreva seu Insight:</div>",
             unsafe_allow_html=True,
         )
         query = st.text_area(
@@ -129,7 +129,7 @@ def _render_consulta():
         col_btn, _ = st.columns([1, 3])
         with col_btn:
             submit = st.form_submit_button(
-                "Gerar Script", type="primary", use_container_width=True
+                "Gerar Script", type="primary", use_container_width=True, icon=":material/send:"
             )
 
     # Resultados
@@ -168,7 +168,7 @@ def _render_consulta():
 
             with col_tables:
                 st.markdown(
-                    "<div style='color: #94A3B8; font-weight: 600; font-size: 0.85rem; margin-bottom: 14px;'>TABELAS MAPEADAS</div>",
+                    "<div style='color: #A0AEC0; font-weight: 600; font-size: 0.85rem; margin-bottom: 14px;'>TABELAS MAPEADAS</div>",
                     unsafe_allow_html=True,
                 )
                 if result.get("tables_identified"):
@@ -187,7 +187,7 @@ def _render_consulta():
 
             with col_script:
                 st.markdown(
-                    f"<div style='color: #94A3B8; font-weight: 600; font-size: 0.85rem; margin-bottom: 14px;'>"
+                    f"<div style='color: #A0AEC0; font-weight: 600; font-size: 0.85rem; margin-bottom: 14px;'>"
                     f"SCRIPT {result['script_type']} GERADO</div>",
                     unsafe_allow_html=True,
                 )
@@ -204,10 +204,10 @@ def _render_consulta():
             chart = result.get("chart")
             if chart:
                 st.markdown(
-                    f"<div style='color: #CBD5E1; font-weight: 600; font-size: 1.05rem; margin-bottom: 6px;'>"
+                    f"<div style='color: #FFFFFF; font-weight: 600; font-size: 1.05rem; margin-bottom: 6px;'>"
                     f"📊 {chart['title']}</div>"
-                    f"<div style='color: #475569; font-size: 0.8rem; margin-bottom: 16px;'>"
-                    f"Tipo de gráfico selecionado automaticamente: <b style='color: #60A5FA;'>{chart['chart_type'].upper()}</b></div>",
+                    f"<div style='color: #A0AEC0; font-size: 0.8rem; margin-bottom: 16px;'>"
+                    f"Tipo de gráfico selecionado automaticamente: <b style='color: #FFFFFF;'>{chart['chart_type'].upper()}</b></div>",
                     unsafe_allow_html=True,
                 )
 
@@ -456,11 +456,14 @@ def _render_salvas():
     st.markdown(
         """
         <style>
+            div[data-testid="stTextArea"] > div[data-baseweb="textarea"] {
+                background-color: #0f172a !important;
+                border: 1px solid rgba(255, 255, 255, 0.2) !important;
+            }
             div[data-testid="stTextArea"] textarea {
-                font-family: 'Consolas', 'Courier New', monospace;
-                background-color: #1e1e1e !important;
-                color: #d4d4d4 !important;
-                border: 1px solid #333 !important;
+                font-family: 'Consolas', 'Courier New', monospace !important;
+                color: #FFFFFF !important;
+                background-color: transparent !important;
             }
         </style>
         """,
@@ -617,7 +620,7 @@ def _render_schema():
     st.dataframe(full_df, use_container_width=True, hide_index=True, height=400)
 
     st.markdown(
-        f"<div style='color: #475569; font-size: 0.8rem; margin-top: 8px;'>"
+        f"<div style='color: #A0AEC0; font-size: 0.8rem; margin-top: 8px;'>"
         f"Exibindo {len(full_df)} colunas de {full_df['Tabela'].nunique()} tabela(s).</div>",
         unsafe_allow_html=True,
     )
