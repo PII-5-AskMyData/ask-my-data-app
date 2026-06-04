@@ -1,0 +1,1829 @@
+[
+  {
+    "table_name": "MSEG",
+    "description": "Documento de Material: Segmento",
+    "fields": [
+      {
+        "name": "MBLNR",
+        "type": "VARCHAR(10)",
+        "description": "Número do documento de material"
+      },
+      {
+        "name": "MJAHR",
+        "type": "INTEGER",
+        "description": "Ano do documento de material"
+      },
+      {
+        "name": "ZEILE",
+        "type": "INTEGER",
+        "description": "Item do documento de material"
+      },
+      {
+        "name": "MATNR",
+        "type": "VARCHAR(18)",
+        "description": "Número do material"
+      },
+      {
+        "name": "WERKS",
+        "type": "VARCHAR(4)",
+        "description": "Centro / Planta"
+      },
+      {
+        "name": "MENGE",
+        "type": "DECIMAL(13,3)",
+        "description": "Quantidade"
+      },
+      {
+        "name": "AUFNR",
+        "type": "VARCHAR(12)",
+        "description": "Número da ordem (Ligação com Produção)"
+      }
+    ],
+    "keywords": "MSEG, Movimentação de Material, Join MKPF, Join MARA, MBLNR, MJAHR, MATNR, Centro Operacional, Fila de Produção, Estoque, Lote, Processo Produtivo.",
+    "join_rules": "Movimentação. Liga com MKPF usando MBLNR e MJAHR. Liga com MARA usando MATNR. Liga com EKBE usando a chave MENGE para obter dados de quantidade recebida. Liga com AFKO usando a chave AUFNR para obter dados de ordem de produção."
+  },
+  {
+    "table_name": "VBRK",
+    "description": "Documento de Faturamento: Dados de Cabeçalho",
+    "fields": [
+      {
+        "name": "VBELN",
+        "type": "VARCHAR(10)",
+        "description": "Documento de faturamento"
+      },
+      {
+        "name": "FKART",
+        "type": "VARCHAR(4)",
+        "description": "Tipo de faturamento"
+      },
+      {
+        "name": "FKDAT",
+        "type": "DATE",
+        "description": "Data do faturamento"
+      },
+      {
+        "name": "VKORG",
+        "type": "VARCHAR(4)",
+        "description": "Organização de vendas"
+      },
+      {
+        "name": "NETWR",
+        "type": "DECIMAL(15,2)",
+        "description": "Valor líquido na moeda do documento"
+      },
+      {
+        "name": "WAERK",
+        "type": "VARCHAR(5)",
+        "description": "Moeda do documento"
+      }
+    ],
+    "keywords": "Venda, faturamento, cliente, pedido, empresa, organização, documento, cabeçalho, regra, join, VBELN, VKORG",
+    "join_rules": "Para faturamento total por empresa/organização, use a coluna VKORG desta própria tabela. É PROIBIDO fazer JOIN com Centro de Lucro (CEPC) ou Centro de Custo (CSKS/CSKT). Liga com VBAP via VBELN. Liga com LIKP usando a chave VBELN para obter dados de Nota Fiscal e Pedido de Venda."
+  },
+  {
+    "table_name": "AFKO",
+    "description": "Dados de cabeçalho da ordem de produção (PP)",
+    "fields": [
+      {
+        "name": "AUFNR",
+        "type": "VARCHAR(12)",
+        "description": "Número da ordem (Ligação com Produção)"
+      },
+      {
+        "name": "GLTRP",
+        "type": "DATE",
+        "description": "Data de conclusão básica"
+      },
+      {
+        "name": "GSTRP",
+        "type": "DATE",
+        "description": "Data de início básica"
+      },
+      {
+        "name": "GAMNG",
+        "type": "DECIMAL(13,3)",
+        "description": "Quantidade total da ordem"
+      },
+      {
+        "name": "GMEIN",
+        "type": "VARCHAR(3)",
+        "description": "Unidade de medida da ordem"
+      },
+      {
+        "name": "WERKS",
+        "type": "VARCHAR(4)",
+        "description": "Centro / Planta de produção"
+      }
+    ],
+    "keywords": "ordem de produção, PP, cabeçalho, centro de produção, data de criação, usuário responsável, status da ordem, número de pedido, descrição do produto, quantidade solicitada",
+    "join_rules": ""
+  },
+  {
+    "table_name": "EKPO",
+    "description": "Item do Documento de Compras",
+    "fields": [
+      {
+        "name": "EBELN",
+        "type": "VARCHAR(10)",
+        "description": "Número do documento de compras"
+      },
+      {
+        "name": "EBELP",
+        "type": "INTEGER",
+        "description": "Número do item do documento de compras"
+      },
+      {
+        "name": "MATNR",
+        "type": "VARCHAR(18)",
+        "description": "Número do material"
+      },
+      {
+        "name": "TXZ01",
+        "type": "VARCHAR(40)",
+        "description": "Descrição curta do material"
+      },
+      {
+        "name": "MENGE",
+        "type": "DECIMAL(13,3)",
+        "description": "Quantidade do pedido de compras"
+      },
+      {
+        "name": "NETPR",
+        "type": "DECIMAL(11,2)",
+        "description": "Preço líquido"
+      },
+      {
+        "name": "BPRME",
+        "type": "VARCHAR(3)",
+        "description": "Unidade de preço do pedido"
+      }
+    ],
+    "keywords": "item de compra, pedido de compra, número do pedido, material, descrição, fornecedor, quantidade, preço, estoque, aprovação.",
+    "join_rules": "Liga PRINCIPALMENTE com EKKO usando EBELN. Liga com material MARA ou MAKT usando MATNR. Liga com EKBE usando EBELN e EBELP para obter histórico. Liga com EKET usando EBELN e EBELP para dados de remessa."
+  },
+  {
+    "table_name": "MARA",
+    "description": "Dados Gerais do Material",
+    "fields": [
+      {
+        "name": "MATNR",
+        "type": "VARCHAR(18)",
+        "description": "Número do material"
+      },
+      {
+        "name": "MAKTX",
+        "type": "VARCHAR(40)",
+        "description": "Descrição do material"
+      },
+      {
+        "name": "MTART",
+        "type": "VARCHAR(4)",
+        "description": "Tipo de material"
+      },
+      {
+        "name": "MATKL",
+        "type": "VARCHAR(9)",
+        "description": "Grupo de mercadorias"
+      },
+      {
+        "name": "MEINS",
+        "type": "VARCHAR(3)",
+        "description": "Unidade de medida básica"
+      }
+    ],
+    "keywords": "material, estoque, codificação, descrição, fornecedor, preço, categoria, localização, baixa estoque",
+    "join_rules": ""
+  },
+  {
+    "table_name": "LIKP",
+    "description": "Documento de Entrega: Cabeçalho",
+    "fields": [
+      {
+        "name": "VBELN",
+        "type": "VARCHAR(10)",
+        "description": "Número da entrega"
+      },
+      {
+        "name": "LFDAT",
+        "type": "DATE",
+        "description": "Data da entrega"
+      },
+      {
+        "name": "KUNNR",
+        "type": "VARCHAR(10)",
+        "description": "Número do cliente"
+      },
+      {
+        "name": "WADAT",
+        "type": "DATE",
+        "description": "Data planejada de saída de mercadoria"
+      },
+      {
+        "name": "BTGEW",
+        "type": "DECIMAL(15,3)",
+        "description": "Peso bruto"
+      }
+    ],
+    "keywords": "Nota Fiscal, Pedido de Venda, Cabeçalho de Entrega, Documento SAP, Itens da Nota, Data Emissão, Fornecedor, Status, Valor Total.",
+    "join_rules": "Liga com BSID usando a chave KUNNR para obter dados de Contabilidade do cliente. Liga com BSAD usando a chave KUNNR para obter dados de informações contábeis dos clientes."
+  },
+  {
+    "table_name": "MKPF",
+    "description": "Cabeçalho do Documento de Material (MM)",
+    "fields": [
+      {
+        "name": "MBLNR",
+        "type": "VARCHAR(10)",
+        "description": "Número do documento de material"
+      },
+      {
+        "name": "MJAHR",
+        "type": "INTEGER",
+        "description": "Ano do documento de material"
+      },
+      {
+        "name": "BLDAT",
+        "type": "DATE",
+        "description": "Data do documento no documento"
+      },
+      {
+        "name": "BUDAT",
+        "type": "DATE",
+        "description": "Data de lançamento"
+      },
+      {
+        "name": "USNAM",
+        "type": "VARCHAR(12)",
+        "description": "Nome do usuário"
+      }
+    ],
+    "keywords": "MKPF, Cabeçalho do Documento de Material, MM, Centro Operacional, Fábrica, Filial, Número do Pedido, Data da Entrega, Código do Produto",
+    "join_rules": "Liga com RBKP usando a chave BLDAT para obter dados de data de faturamento. Liga com COBK usando a chave BLDAT para obter dados de Data de Lançamento. Liga com BKPF usando a chave BUDAT para obter dados financeiros relacionados aos documentos de material."
+  },
+  {
+    "table_name": "MARC",
+    "description": "Dados de Centro para o Material (MM)",
+    "fields": [
+      {
+        "name": "MATNR",
+        "type": "VARCHAR(18)",
+        "description": "Número do material"
+      },
+      {
+        "name": "WERKS",
+        "type": "VARCHAR(4)",
+        "description": "Centro / Planta"
+      },
+      {
+        "name": "DISPO",
+        "type": "VARCHAR(3)",
+        "description": "Planejador MRP"
+      },
+      {
+        "name": "PLIFZ",
+        "type": "DECIMAL(3,0)",
+        "description": "Prazo de entrega previsto em dias"
+      }
+    ],
+    "keywords": "Materiais, estoque, centro de produção, inventário, codificação, classificação, armazém, fornecimento, controle de qualidade",
+    "join_rules": ""
+  },
+  {
+    "table_name": "MARD",
+    "description": "Dados de Depósito para o Material (MM) - Estoque",
+    "fields": [
+      {
+        "name": "MATNR",
+        "type": "VARCHAR(18)",
+        "description": "Número do material"
+      },
+      {
+        "name": "WERKS",
+        "type": "VARCHAR(4)",
+        "description": "Centro"
+      },
+      {
+        "name": "LGORT",
+        "type": "VARCHAR(4)",
+        "description": "Depósito"
+      },
+      {
+        "name": "LABST",
+        "type": "DECIMAL(13,3)",
+        "description": "Estoque de utilização livre"
+      }
+    ],
+    "keywords": "estoque, depósito, material, MM, estoquista, centro de distribuição, armazém, controle de estoque, balanço de estoque",
+    "join_rules": "Liga com MCHB usando a chave LGORT para obter dados de estoque por lote. Liga com T001L usando a chave LGORT para obter dados de configuração de depósitos."
+  },
+  {
+    "table_name": "MBEW",
+    "description": "Avaliação de Material (Finanças de Estoque)",
+    "fields": [
+      {
+        "name": "MATNR",
+        "type": "VARCHAR(18)",
+        "description": "Número do material"
+      },
+      {
+        "name": "BWKEY",
+        "type": "VARCHAR(4)",
+        "description": "Área de avaliação (Geralmente o Centro)"
+      },
+      {
+        "name": "VERPR",
+        "type": "DECIMAL(11,2)",
+        "description": "Preço médio móvel"
+      },
+      {
+        "name": "STPRS",
+        "type": "DECIMAL(11,2)",
+        "description": "Preço padrão"
+      },
+      {
+        "name": "SALK3",
+        "type": "DECIMAL(13,2)",
+        "description": "Valor total do estoque avaliado"
+      }
+    ],
+    "keywords": "MBEW, Avaliação de Material, Finanças de Estoque, Controle de estoque, Balança de materiais, Centro de custo, Operações financeiras, Gestão de inventário, Contabilidade corporativa.",
+    "join_rules": ""
+  },
+  {
+    "table_name": "EBAN",
+    "description": "Requisição de Compra (MM)",
+    "fields": [
+      {
+        "name": "BANFN",
+        "type": "VARCHAR(10)",
+        "description": "Número da requisição de compra"
+      },
+      {
+        "name": "BNFPO",
+        "type": "INTEGER",
+        "description": "Item da requisição de compra"
+      },
+      {
+        "name": "MATNR",
+        "type": "VARCHAR(18)",
+        "description": "Número do material"
+      },
+      {
+        "name": "MENGE",
+        "type": "DECIMAL(13,3)",
+        "description": "Quantidade solicitada"
+      },
+      {
+        "name": "BADAT",
+        "type": "DATE",
+        "description": "Data da requisição"
+      }
+    ],
+    "keywords": "Requisição de Compra, MM, pedido, aprovação, estoque, fornecedor, departamento compras, item, quantidade.",
+    "join_rules": "Não possui ligação direta simplificada neste schema. Use para consultas diretas de requisição."
+  },
+  {
+    "table_name": "EKBE",
+    "description": "Histórico do Documento de Compras (Recebimentos e Faturas)",
+    "fields": [
+      {
+        "name": "EBELN",
+        "type": "VARCHAR(10)",
+        "description": "Número do documento de compras"
+      },
+      {
+        "name": "EBELP",
+        "type": "INTEGER",
+        "description": "Item do documento de compras"
+      },
+      {
+        "name": "VGABE",
+        "type": "VARCHAR(1)",
+        "description": "Tipo de operação (1=Entrada mercadoria, 2=Fatura)"
+      },
+      {
+        "name": "BELNR",
+        "type": "VARCHAR(10)",
+        "description": "Número do documento de material/fatura"
+      },
+      {
+        "name": "MENGE",
+        "type": "DECIMAL(13,3)",
+        "description": "Quantidade entrada/faturada"
+      }
+    ],
+    "keywords": "compras, recebimentos, faturas, estoque, fornecedores, documentos, balanço.",
+    "join_rules": "Liga com EKPO usando as chaves EBELN e EBELP para referenciar o item do pedido."
+  },
+  {
+    "table_name": "EINA",
+    "description": "Registro Info de Compras: Dados Gerais (MM)",
+    "fields": [
+      {
+        "name": "INFNR",
+        "type": "VARCHAR(10)",
+        "description": "Número do registro info"
+      },
+      {
+        "name": "MATNR",
+        "type": "VARCHAR(18)",
+        "description": "Número do material"
+      },
+      {
+        "name": "LIFNR",
+        "type": "VARCHAR(10)",
+        "description": "Número da conta do fornecedor"
+      },
+      {
+        "name": "ERDAT",
+        "type": "DATE",
+        "description": "Data de criação"
+      }
+    ],
+    "keywords": "EINA, Registro Info de Compras, Dados Gerais, MM, Centro Operacional, Fornecedor, Pedido, Compra, Estoque, Balança",
+    "join_rules": "Liga com EINE usando a chave INFNR para obter dados de detalhes organizacionais das compras. Liga com RBKP usando a chave LIFNR para obter dados de cliente. Liga com BSIK usando a chave LIFNR para obter dados de contabilidade de fornecedores. Liga com BSAK usando a chave LIFNR para obter dados de pagamentos e contabilização."
+  },
+  {
+    "table_name": "EINE",
+    "description": "Registro Info de Compras: Organização de Compras (MM)",
+    "fields": [
+      {
+        "name": "INFNR",
+        "type": "VARCHAR(10)",
+        "description": "Número do registro info"
+      },
+      {
+        "name": "EKORG",
+        "type": "VARCHAR(4)",
+        "description": "Organização de compras"
+      },
+      {
+        "name": "NETPR",
+        "type": "DECIMAL(11,2)",
+        "description": "Preço líquido no info record"
+      },
+      {
+        "name": "WAERS",
+        "type": "VARCHAR(5)",
+        "description": "Moeda"
+      }
+    ],
+    "keywords": "EINE, MM, compras, organização de compras, registro info, centro de negócios, fornecedores, pedidos, aprovação, estoque.",
+    "join_rules": "Liga com SKB1 usando a chave WAERS para obter dados de moeda da empresa."
+  },
+  {
+    "table_name": "MCHA",
+    "description": "Lotes de Materiais (MM/WM)",
+    "fields": [
+      {
+        "name": "MATNR",
+        "type": "VARCHAR(18)",
+        "description": "Número do material"
+      },
+      {
+        "name": "WERKS",
+        "type": "VARCHAR(4)",
+        "description": "Centro"
+      },
+      {
+        "name": "CHARG",
+        "type": "VARCHAR(10)",
+        "description": "Número do lote"
+      },
+      {
+        "name": "VFDAT",
+        "type": "DATE",
+        "description": "Data de validade do lote"
+      },
+      {
+        "name": "HSDAT",
+        "type": "DATE",
+        "description": "Data de fabricação do lote"
+      }
+    ],
+    "keywords": "Lotes de materiais, MM/WM, estoque, controle de estoque, balanço de estoque, movimentação de estoque.",
+    "join_rules": "Liga com MCHB usando as colunas MATNR, WERKS e CHARG simultaneamente."
+  },
+  {
+    "table_name": "MCHB",
+    "description": "Estoque de Lotes (MM/WM)",
+    "fields": [
+      {
+        "name": "MATNR",
+        "type": "VARCHAR(18)",
+        "description": "Número do material"
+      },
+      {
+        "name": "WERKS",
+        "type": "VARCHAR(4)",
+        "description": "Centro"
+      },
+      {
+        "name": "LGORT",
+        "type": "VARCHAR(4)",
+        "description": "Depósito"
+      },
+      {
+        "name": "CHARG",
+        "type": "VARCHAR(10)",
+        "description": "Número do lote"
+      },
+      {
+        "name": "CLABS",
+        "type": "DECIMAL(13,3)",
+        "description": "Estoque de utilização livre do lote"
+      }
+    ],
+    "keywords": "Estoque, lote, MM/WM, centro de distribuição, armazém, inventário.",
+    "join_rules": "Liga com MCHA usando as colunas MATNR, WERKS e CHARG simultaneamente. Liga com T001L usando a chave LGORT."
+  },
+  {
+    "table_name": "RESB",
+    "description": "Reservas e Necessidades Dependentes (MM/PP)",
+    "fields": [
+      {
+        "name": "RSNUM",
+        "type": "VARCHAR(10)",
+        "description": "Número da reserva/necessidade dependente"
+      },
+      {
+        "name": "RSPOS",
+        "type": "INTEGER",
+        "description": "Item da reserva"
+      },
+      {
+        "name": "MATNR",
+        "type": "VARCHAR(18)",
+        "description": "Número do material"
+      },
+      {
+        "name": "WERKS",
+        "type": "VARCHAR(4)",
+        "description": "Centro"
+      },
+      {
+        "name": "BDMNG",
+        "type": "DECIMAL(13,3)",
+        "description": "Quantidade necessária"
+      }
+    ],
+    "keywords": "reserva, estoque, dependente, demanda, produção, plano de produção, material, fornecedor, pedido",
+    "join_rules": ""
+  },
+  {
+    "table_name": "T001W",
+    "description": "Centros / Plantas Físicas (Configuração)",
+    "fields": [
+      {
+        "name": "WERKS",
+        "type": "VARCHAR(4)",
+        "description": "Centro / Planta"
+      },
+      {
+        "name": "NAME1",
+        "type": "VARCHAR(30)",
+        "description": "Nome do centro"
+      },
+      {
+        "name": "STRAS",
+        "type": "VARCHAR(30)",
+        "description": "Rua / Endereço"
+      },
+      {
+        "name": "LAND1",
+        "type": "VARCHAR(3)",
+        "description": "País"
+      }
+    ],
+    "keywords": "planta,fábrica,cenário,configuração,localização,operacional,estrutura,nível de produção",
+    "join_rules": ""
+  },
+  {
+    "table_name": "T001L",
+    "description": "Depósitos (Configuração)",
+    "fields": [
+      {
+        "name": "WERKS",
+        "type": "VARCHAR(4)",
+        "description": "Centro"
+      },
+      {
+        "name": "LGORT",
+        "type": "VARCHAR(4)",
+        "description": "Depósito"
+      },
+      {
+        "name": "LGOBE",
+        "type": "VARCHAR(16)",
+        "description": "Denominação do depósito"
+      }
+    ],
+    "keywords": "configuração de depósitos, estoque, controle de inventário, localização, armazém, cadastro de depósitos, gerenciamento de logística, balcão de entrada, estoquista",
+    "join_rules": ""
+  },
+  {
+    "table_name": "LTAK",
+    "description": "Cabeçalho da Ordem de Transferência (WM - Warehouse Management)",
+    "fields": [
+      {
+        "name": "LGNUM",
+        "type": "VARCHAR(3)",
+        "description": "Número do depósito complexo"
+      },
+      {
+        "name": "TANUM",
+        "type": "VARCHAR(10)",
+        "description": "Número da ordem de transferência"
+      },
+      {
+        "name": "BDATU",
+        "type": "DATE",
+        "description": "Data de criação da ordem"
+      },
+      {
+        "name": "BZEIT",
+        "type": "TIME",
+        "description": "Hora de criação"
+      }
+    ],
+    "keywords": "LTAK, Ordem de Transferência, WM, Cabeçalho, Planta, Fábrica, Armazém, Operação, Logística, Estoque.",
+    "join_rules": "Liga com LTAP usando a chave LGNUM para obter dados de itens da ordem de transferência. Liga com LQUA usando a chave LGNUM para obter dados de estoque físico e lotes. Liga com LAGP usando a chave LGNUM para obter dados de endereçamento e estoque. Liga com ANLZ usando a chave BDATU para obter dados de alocação temporal."
+  },
+  {
+    "table_name": "LTAP",
+    "description": "Item da Ordem de Transferência (WM)",
+    "fields": [
+      {
+        "name": "LGNUM",
+        "type": "VARCHAR(3)",
+        "description": "Número do depósito complexo"
+      },
+      {
+        "name": "TANUM",
+        "type": "VARCHAR(10)",
+        "description": "Número da ordem de transferência"
+      },
+      {
+        "name": "TAPOS",
+        "type": "INTEGER",
+        "description": "Item da ordem de transferência"
+      },
+      {
+        "name": "MATNR",
+        "type": "VARCHAR(18)",
+        "description": "Número do material"
+      },
+      {
+        "name": "VSOLA",
+        "type": "DECIMAL(13,3)",
+        "description": "Quantidade teórica a movimentar"
+      }
+    ],
+    "keywords": "LTAP, Ordem de Transferência, WM, Centro Operacional, Movimentação Estoque, Armazém, Transferência Interna, Itens de Pedido, Controle de Estoque",
+    "join_rules": "Liga com LQUA usando a chave LGNUM para obter dados de estoque físico e lotes. Liga com LAGP usando a chave LGNUM para obter dados de endereçamento e estoque."
+  },
+  {
+    "table_name": "LQUA",
+    "description": "Quants / Lotes Físicos no Armazém (WM)",
+    "fields": [
+      {
+        "name": "LGNUM",
+        "type": "VARCHAR(3)",
+        "description": "Número do depósito complexo"
+      },
+      {
+        "name": "LQNUM",
+        "type": "VARCHAR(10)",
+        "description": "Número do quant (Unidade de estoque físico)"
+      },
+      {
+        "name": "MATNR",
+        "type": "VARCHAR(18)",
+        "description": "Número do material"
+      },
+      {
+        "name": "VERME",
+        "type": "DECIMAL(13,3)",
+        "description": "Quantidade disponível no local"
+      },
+      {
+        "name": "LGTYP",
+        "type": "VARCHAR(3)",
+        "description": "Tipo de depósito (Ex: Porta-paletes, Mezanino)"
+      }
+    ],
+    "keywords": "LQUA, estoque físico, armazém, lotes, quantidades, balanço de estoque, controle de inventário, movimentação de mercadoria, operações warehouse.",
+    "join_rules": "Liga com LAGP usando a chave LGNUM para obter dados de endereçamento do estoque."
+  },
+  {
+    "table_name": "LAGP",
+    "description": "Posições no Depósito / Endereçamento (WM)",
+    "fields": [
+      {
+        "name": "LGNUM",
+        "type": "VARCHAR(3)",
+        "description": "Número do depósito complexo"
+      },
+      {
+        "name": "LGTYP",
+        "type": "VARCHAR(3)",
+        "description": "Tipo de depósito"
+      },
+      {
+        "name": "LGPLA",
+        "type": "VARCHAR(10)",
+        "description": "Posição no depósito (Endereço físico)"
+      },
+      {
+        "name": "MAXME",
+        "type": "DECIMAL(13,3)",
+        "description": "Quantidade máxima permitida no local"
+      }
+    ],
+    "keywords": "Depósito, endereçamento, estoque, localização, armazém, balcão, caixa, etiqueta, rótulo.",
+    "join_rules": ""
+  },
+  {
+    "table_name": "EKET",
+    "description": "Divisões da Remessa do Documento de Compras (MM)",
+    "fields": [
+      {
+        "name": "EBELN",
+        "type": "VARCHAR(10)",
+        "description": "Número do documento de compras"
+      },
+      {
+        "name": "EBELP",
+        "type": "INTEGER",
+        "description": "Item do documento de compras"
+      },
+      {
+        "name": "ETENR",
+        "type": "INTEGER",
+        "description": "Número da divisão da remessa"
+      },
+      {
+        "name": "EINDT",
+        "type": "DATE",
+        "description": "Data de remessa prevista"
+      },
+      {
+        "name": "MENGE",
+        "type": "DECIMAL(13,3)",
+        "description": "Quantidade programada"
+      }
+    ],
+    "keywords": "ordem de compra, fornecedor, pedido, estoque, remessa, material, quantidade, data, status.",
+    "join_rules": "Liga com EKPO usando as chaves EBELN e EBELP."
+  },
+  {
+    "table_name": "RBKP",
+    "description": "Cabeçalho do Documento de Fatura Recebida (MM/FI)",
+    "fields": [
+      {
+        "name": "BELNR",
+        "type": "VARCHAR(10)",
+        "description": "Número do documento de fatura"
+      },
+      {
+        "name": "GJAHR",
+        "type": "INTEGER",
+        "description": "Exercício (Ano)"
+      },
+      {
+        "name": "BLDAT",
+        "type": "DATE",
+        "description": "Data do documento"
+      },
+      {
+        "name": "RMWWR",
+        "type": "DECIMAL(13,2)",
+        "description": "Montante bruto da fatura"
+      },
+      {
+        "name": "LIFNR",
+        "type": "VARCHAR(10)",
+        "description": "Fornecedor"
+      }
+    ],
+    "keywords": "Fatura recebida, MM/FI, cabeçalho, centro de custo, fornecedor, data emissão, valor total, número documento, status financeiro.",
+    "join_rules": "Liga com COBK usando a chave BLDAT para obter dados de Data de Lançamento. Liga com BSIK usando a chave LIFNR para obter dados de contabilidade de fornecedores em aberto. Liga com BSAK usando a chave LIFNR para obter dados de pagamentos compensados. Liga com RSEG usando a chave GJAHR para obter dados de ano fiscal. Liga com BKPF usando a chave GJAHR para obter dados de ano fiscal. Liga com BSEG usando a chave GJAHR para obter dados de ano contábil."
+  },
+  {
+    "table_name": "RSEG",
+    "description": "Item do Documento de Fatura Recebida (MM/FI)",
+    "fields": [
+      {
+        "name": "BELNR",
+        "type": "VARCHAR(10)",
+        "description": "Número do documento de fatura"
+      },
+      {
+        "name": "GJAHR",
+        "type": "INTEGER",
+        "description": "Exercício (Ano)"
+      },
+      {
+        "name": "BUZEI",
+        "type": "INTEGER",
+        "description": "Item do documento"
+      },
+      {
+        "name": "EBELN",
+        "type": "VARCHAR(10)",
+        "description": "Documento de compras referenciado"
+      },
+      {
+        "name": "WRBTR",
+        "type": "DECIMAL(13,2)",
+        "description": "Montante na moeda do documento"
+      }
+    ],
+    "keywords": "Contabilista, faturamento, recebimento, documento, centro de custo, data, valor, cliente, nota fiscal, baixa.",
+    "join_rules": "Liga com BKPF usando a chave GJAHR para obter dados de ano fiscal. Liga com BSEG usando a chave GJAHR para obter dados de ano fiscal. Liga com COBK usando a chave GJAHR para obter dados de ano fiscal. Liga com COEP usando a chave BUZEI para obter dados de custos reais associados às faturas recebidas."
+  },
+  {
+    "table_name": "BKPF",
+    "description": "Cabeçalho do Documento Contábil / Financeiro (FI)",
+    "fields": [
+      {
+        "name": "BUKRS",
+        "type": "VARCHAR(4)",
+        "description": "Empresa"
+      },
+      {
+        "name": "BELNR",
+        "type": "VARCHAR(10)",
+        "description": "Número do documento contábil"
+      },
+      {
+        "name": "GJAHR",
+        "type": "INTEGER",
+        "description": "Exercício (Ano fiscal)"
+      },
+      {
+        "name": "BLART",
+        "type": "VARCHAR(2)",
+        "description": "Tipo de documento (Ex: KR=Fatura Fornecedor, DR=Fatura Cliente)"
+      },
+      {
+        "name": "BUDAT",
+        "type": "DATE",
+        "description": "Data de lançamento contábil"
+      }
+    ],
+    "keywords": "Contábil, financeiro, documento, centro de custo, plano de contas, lançamento, balança geral, auditoria, GL.",
+    "join_rules": "Liga com BSEG usando a chave GJAHR para obter dados de ano contábil. Liga com COBK usando a chave GJAHR para obter dados de ano fiscal. Liga com ANEP usando a chave GJAHR para obter dados de ano fiscal."
+  },
+  {
+    "table_name": "BSEG",
+    "description": "Segmento (Itens) do Documento Contábil (FI)",
+    "fields": [
+      {
+        "name": "BUKRS",
+        "type": "VARCHAR(4)",
+        "description": "Empresa"
+      },
+      {
+        "name": "BELNR",
+        "type": "VARCHAR(10)",
+        "description": "Número do documento contábil"
+      },
+      {
+        "name": "GJAHR",
+        "type": "INTEGER",
+        "description": "Exercício"
+      },
+      {
+        "name": "BUZEI",
+        "type": "INTEGER",
+        "description": "Item do documento contábil"
+      },
+      {
+        "name": "HKONT",
+        "type": "VARCHAR(10)",
+        "description": "Conta do Razão Geral (G/L)"
+      },
+      {
+        "name": "SHKZG",
+        "type": "VARCHAR(1)",
+        "description": "Indicador de Débito/Crédito (S=Débito, H=Crédito)"
+      },
+      {
+        "name": "DMBTR",
+        "type": "DECIMAL(13,2)",
+        "description": "Montante na moeda interna da empresa"
+      }
+    ],
+    "keywords": "Contabilidade, financeiro, documentos, itens, segmentos, cabeçalhos, regras de negócio, integração, SAP, FI, BKPF, EKKO, EKPO.",
+    "join_rules": "Item contábil. Liga EXCLUSIVAMENTE com Cabeçalho Contábil (BKPF) usando BELNR, BUKRS e GJAHR. NÃO ligue com compras (EKKO/EKPO) diretamente. Liga com COBK usando a chave GJAHR para obter dados de Ano Fiscal. Liga com COEP usando a chave BUZEI para obter dados de custos reais associados aos itens contábeis. Liga com BSID usando a chave DMBTR para obter dados de saldo em aberto dos clientes. Liga com BSIK usando a chave DMBTR para obter dados de saldo em aberto dos fornecedores. Liga com BSAK usando a chave DMBTR para obter dados de compensação financeira."
+  },
+  {
+    "table_name": "BSID",
+    "description": "Contabilidade de Clientes: Itens em Aberto (A Receber)",
+    "fields": [
+      {
+        "name": "BUKRS",
+        "type": "VARCHAR(4)",
+        "description": "Empresa"
+      },
+      {
+        "name": "KUNNR",
+        "type": "VARCHAR(10)",
+        "description": "Número do cliente"
+      },
+      {
+        "name": "BELNR",
+        "type": "VARCHAR(10)",
+        "description": "Número do documento"
+      },
+      {
+        "name": "DMBTR",
+        "type": "DECIMAL(13,2)",
+        "description": "Montante em aberto"
+      },
+      {
+        "name": "ZFBDT",
+        "type": "DATE",
+        "description": "Data base para cálculo de vencimento"
+      }
+    ],
+    "keywords": "Contabilidade, clientes, itens em aberto, recebíveis, dívidas, faturamento, cobrança, balança comercial, fluxo de caixa.",
+    "join_rules": "Liga com BSAD usando a chave KUNNR para obter dados de itens compensados. Liga com BSAK usando a chave DMBTR para obter dados de pagamentos dos fornecedores."
+  },
+  {
+    "table_name": "BSAD",
+    "description": "Contabilidade de Clientes: Itens Compensados (Recebidos)",
+    "fields": [
+      {
+        "name": "BUKRS",
+        "type": "VARCHAR(4)",
+        "description": "Empresa"
+      },
+      {
+        "name": "KUNNR",
+        "type": "VARCHAR(10)",
+        "description": "Número do cliente"
+      },
+      {
+        "name": "BELNR",
+        "type": "VARCHAR(10)",
+        "description": "Número do documento"
+      },
+      {
+        "name": "AUGDT",
+        "type": "DATE",
+        "description": "Data de compensação (Data em que foi pago)"
+      },
+      {
+        "name": "AUGBL",
+        "type": "VARCHAR(10)",
+        "description": "Documento de compensação"
+      }
+    ],
+    "keywords": "contabilidade de clientes, itens compensados, recebidos, centro de custo, plano de contas, financeiro, balança geral, reconciliação, fluxo de caixa",
+    "join_rules": ""
+  },
+  {
+    "table_name": "BSIK",
+    "description": "Contabilidade de Fornecedores: Itens em Aberto (A Pagar)",
+    "fields": [
+      {
+        "name": "BUKRS",
+        "type": "VARCHAR(4)",
+        "description": "Empresa"
+      },
+      {
+        "name": "LIFNR",
+        "type": "VARCHAR(10)",
+        "description": "Número do fornecedor"
+      },
+      {
+        "name": "BELNR",
+        "type": "VARCHAR(10)",
+        "description": "Número do documento"
+      },
+      {
+        "name": "DMBTR",
+        "type": "DECIMAL(13,2)",
+        "description": "Montante a pagar"
+      },
+      {
+        "name": "ZFBDT",
+        "type": "DATE",
+        "description": "Data base para cálculo de vencimento"
+      }
+    ],
+    "keywords": "contabilidade, fornecedores, itens em aberto, a pagar, balança de pagamentos, documentos financeiros, liquidez, pagamento pendente, controle financeiro.",
+    "join_rules": "Liga com BSAK usando a chave LIFNR para obter dados de itens compensados."
+  },
+  {
+    "table_name": "BSAK",
+    "description": "Contabilidade de Fornecedores: Itens Compensados (Pagos)",
+    "fields": [
+      {
+        "name": "BUKRS",
+        "type": "VARCHAR(4)",
+        "description": "Empresa"
+      },
+      {
+        "name": "LIFNR",
+        "type": "VARCHAR(10)",
+        "description": "Número do fornecedor"
+      },
+      {
+        "name": "BELNR",
+        "type": "VARCHAR(10)",
+        "description": "Número do documento"
+      },
+      {
+        "name": "AUGDT",
+        "type": "DATE",
+        "description": "Data de compensação (Pagamento efetuado)"
+      },
+      {
+        "name": "DMBTR",
+        "type": "DECIMAL(13,2)",
+        "description": "Montante pago"
+      }
+    ],
+    "keywords": "contabilidade de fornecedores, itens compensados, pagos, centro de custo, fornecedor, parcelas, liquidação, baixa, estoque",
+    "join_rules": ""
+  },
+  {
+    "table_name": "SKA1",
+    "description": "Mestre de Contas do Razão: Plano de Contas (FI)",
+    "fields": [
+      {
+        "name": "KTOPL",
+        "type": "VARCHAR(4)",
+        "description": "Plano de contas"
+      },
+      {
+        "name": "SAKNR",
+        "type": "VARCHAR(10)",
+        "description": "Número da conta do Razão"
+      },
+      {
+        "name": "XBILK",
+        "type": "VARCHAR(1)",
+        "description": "Indicador: Conta de balanço?"
+      },
+      {
+        "name": "GVTYP",
+        "type": "VARCHAR(2)",
+        "description": "Tipo de conta de lucros e perdas"
+      }
+    ],
+    "keywords": "Contabilidade, plano de contas, centro operacional, lançamentos financeiros, balanço geral, fluxo de caixa, custos, receitas, classificação financeira.",
+    "join_rules": "Liga com SKAT usando a chave KTOPL para obter dados de descrições contábeis. Liga com SKB1 usando a chave SAKNR para obter dados de identificação da empresa."
+  },
+  {
+    "table_name": "SKAT",
+    "description": "Mestre de Contas do Razão: Textos e Descrições (FI)",
+    "fields": [
+      {
+        "name": "SPRAS",
+        "type": "VARCHAR(1)",
+        "description": "Idioma"
+      },
+      {
+        "name": "KTOPL",
+        "type": "VARCHAR(4)",
+        "description": "Plano de contas"
+      },
+      {
+        "name": "SAKNR",
+        "type": "VARCHAR(10)",
+        "description": "Número da conta do Razão"
+      },
+      {
+        "name": "TXT20",
+        "type": "VARCHAR(20)",
+        "description": "Texto breve da conta do Razão"
+      },
+      {
+        "name": "TXT50",
+        "type": "VARCHAR(50)",
+        "description": "Texto explicativo da conta do Razão"
+      }
+    ],
+    "keywords": "SKAT, razão social, descrição, contabilidade, financeiro, texto legal, cadastro empresarial, informações jurídicas, documentos oficiais.",
+    "join_rules": "Liga com SKB1 usando a chave SAKNR para obter dados de informações da empresa."
+  },
+  {
+    "table_name": "SKB1",
+    "description": "Mestre de Contas do Razão: Dados da Empresa (FI)",
+    "fields": [
+      {
+        "name": "BUKRS",
+        "type": "VARCHAR(4)",
+        "description": "Empresa"
+      },
+      {
+        "name": "SAKNR",
+        "type": "VARCHAR(10)",
+        "description": "Número da conta do Razão"
+      },
+      {
+        "name": "WAERS",
+        "type": "VARCHAR(5)",
+        "description": "Moeda da conta"
+      },
+      {
+        "name": "FSTAG",
+        "type": "VARCHAR(4)",
+        "description": "Grupo de status de campo"
+      }
+    ],
+    "keywords": "contas, razão, empresa, financeiro, dados, centro de custo, plano de contas, balança geral, fluxo de caixa",
+    "join_rules": ""
+  },
+  {
+    "table_name": "CSKS",
+    "description": "Mestre de Centros de Custo (CO)",
+    "fields": [
+      {
+        "name": "KOKRS",
+        "type": "VARCHAR(4)",
+        "description": "Área de contabilidade de custos"
+      },
+      {
+        "name": "KOSTL",
+        "type": "VARCHAR(10)",
+        "description": "Centro de custo"
+      },
+      {
+        "name": "DATBI",
+        "type": "DATE",
+        "description": "Válido até (Data de expiração)"
+      },
+      {
+        "name": "PRCTR",
+        "type": "VARCHAR(10)",
+        "description": "Centro de lucro associado"
+      }
+    ],
+    "keywords": "Centro de custo, plano de contas, financeiro, operacional, balanço, orçamento, custos, gastos, plano de contabilidades.",
+    "join_rules": "Liga com CSKT usando a chave KOKRS para obter dados de descrição dos centros de custo. Liga com COBK usando a chave KOKRS para obter dados de plano de contas. Liga com COEP usando a chave KOKRS para obter dados de custos reais associados aos centros de custo. Liga com CEPC usando a chave KOKRS para obter dados de plano de contas e finance. Liga com CEPCT usando a chave KOKRS para obter dados de texto dos centros de lucro. Liga com ANLZ usando a chave KOSTL para obter dados de alocação financeira."
+  },
+  {
+    "table_name": "CSKT",
+    "description": "Textos dos Centros de Custo (CO)",
+    "fields": [
+      {
+        "name": "SPRAS",
+        "type": "VARCHAR(1)",
+        "description": "Idioma"
+      },
+      {
+        "name": "KOKRS",
+        "type": "VARCHAR(4)",
+        "description": "Área de contabilidade de custos"
+      },
+      {
+        "name": "KOSTL",
+        "type": "VARCHAR(10)",
+        "description": "Centro de custo"
+      },
+      {
+        "name": "KTEXT",
+        "type": "VARCHAR(20)",
+        "description": "Nome / Denominação do centro de custo"
+      },
+      {
+        "name": "LTEXT",
+        "type": "VARCHAR(40)",
+        "description": "Descrição completa do centro de custo"
+      }
+    ],
+    "keywords": "centro de custo, plano de contas, código do centro, descrição, KOSTL, KOKRS, texto, fábrica, planta, filial",
+    "join_rules": "Textos de Centro de Custo. Liga EXCLUSIVAMENTE com CSKS usando KOSTL e KOKRS. Liga com COBK usando a chave KOKRS para obter dados de descrição dos centros de custo. Liga com COEP usando a chave KOKRS para obter dados de descrição dos centros de custo. Liga com CEPC usando a chave KOKRS para obter dados de descrição completa dos centros de custo. Liga com CEPCT usando a chave KOKRS para obter dados de lucro e faturamento. Liga com ANLZ usando a chave KOSTL para obter dados de alocação."
+  },
+  {
+    "table_name": "COBK",
+    "description": "Cabeçalho do Documento de Controlling (CO)",
+    "fields": [
+      {
+        "name": "KOKRS",
+        "type": "VARCHAR(4)",
+        "description": "Área de contabilidade de custos"
+      },
+      {
+        "name": "BELNR",
+        "type": "VARCHAR(10)",
+        "description": "Número do documento de controlling"
+      },
+      {
+        "name": "GJAHR",
+        "type": "INTEGER",
+        "description": "Exercício"
+      },
+      {
+        "name": "BLDAT",
+        "type": "DATE",
+        "description": "Data do documento"
+      },
+      {
+        "name": "USNAM",
+        "type": "VARCHAR(12)",
+        "description": "Usuário que gerou o documento"
+      }
+    ],
+    "keywords": "COBK, Controlling, Cabeçalho, Documento, Centro de Custos, Balança, Orçamento, Planejamento, Análise Financeira, Relatório",
+    "join_rules": "Liga com ANEP usando a chave GJAHR para obter dados de ano fiscal. Liga com COEP usando a chave KOKRS para obter dados de custos reais associados aos documentos de controle. Liga com CEPC usando a chave KOKRS para obter dados de centro de lucro. Liga com CEPCT usando a chave KOKRS para obter dados de lucro e faturamento por planta."
+  },
+  {
+    "table_name": "COEP",
+    "description": "Itens Individuais do Documento de Controlling (CO) - Custos Reais",
+    "fields": [
+      {
+        "name": "KOKRS",
+        "type": "VARCHAR(4)",
+        "description": "Área de contabilidade de custos"
+      },
+      {
+        "name": "BELNR",
+        "type": "VARCHAR(10)",
+        "description": "Número do documento de controlling"
+      },
+      {
+        "name": "BUZEI",
+        "type": "INTEGER",
+        "description": "Item do documento"
+      },
+      {
+        "name": "OBJNR",
+        "type": "VARCHAR(22)",
+        "description": "Número do objeto (Ex: Centro de custo, Ordem interna)"
+      },
+      {
+        "name": "KSTAR",
+        "type": "VARCHAR(10)",
+        "description": "Classe de custo (Conta)"
+      },
+      {
+        "name": "WTGBTR",
+        "type": "DECIMAL(15,2)",
+        "description": "Valor total na moeda da transação"
+      }
+    ],
+    "keywords": "COEP, custos reais, documento de controle, itens individuais, centro operacional, plano de contas, gastos efetivos, centro de custo, balança geral.",
+    "join_rules": "Liga com CEPC usando a chave KOKRS para obter dados de centro de lucro. Liga com CEPCT usando a chave KOKRS para obter dados de lucro e faturamento."
+  },
+  {
+    "table_name": "CEPC",
+    "description": "Mestre de Centros de Lucro (CO-PCA)",
+    "fields": [
+      {
+        "name": "KOKRS",
+        "type": "VARCHAR(4)",
+        "description": "Área de contabilidade de custos"
+      },
+      {
+        "name": "PRCTR",
+        "type": "VARCHAR(10)",
+        "description": "Centro de lucro"
+      },
+      {
+        "name": "DATBI",
+        "type": "DATE",
+        "description": "Válido até"
+      },
+      {
+        "name": "VERAK",
+        "type": "VARCHAR(20)",
+        "description": "Pessoa responsável pelo centro de lucro"
+      }
+    ],
+    "keywords": "centro de lucro, CO-PCA, plano de contas, financeiro, balança geral, margem bruta, custos operacionais, regra de negócio, plano de despesas.",
+    "join_rules": "Mestre de Centros de Lucro. NÃO possui ligação direta com documentos de vendas, remessas ou faturamento neste schema. Liga com CEPCT usando a chave KOKRS para obter dados de descrição dos centros de lucro."
+  },
+  {
+    "table_name": "CEPCT",
+    "description": "Textos dos Centros de Lucro (CO-PCA)",
+    "fields": [
+      {
+        "name": "SPRAS",
+        "type": "VARCHAR(1)",
+        "description": "Idioma"
+      },
+      {
+        "name": "KOKRS",
+        "type": "VARCHAR(4)",
+        "description": "Área de contabilidade de custos"
+      },
+      {
+        "name": "PRCTR",
+        "type": "VARCHAR(10)",
+        "description": "Centro de lucro"
+      },
+      {
+        "name": "KTEXT",
+        "type": "VARCHAR(20)",
+        "description": "Nome breve do centro de lucro"
+      },
+      {
+        "name": "LTEXT",
+        "type": "VARCHAR(40)",
+        "description": "Descrição detalhada do centro de lucro"
+      }
+    ],
+    "keywords": "CO-PCA, lucro, planta, faturamento, operações, balança, margem, indicadores, desempenho.",
+    "join_rules": ""
+  },
+  {
+    "table_name": "ANLA",
+    "description": "Mestre de Imobilizado: Dados Gerais (FI-AA)",
+    "fields": [
+      {
+        "name": "BUKRS",
+        "type": "VARCHAR(4)",
+        "description": "Empresa"
+      },
+      {
+        "name": "ANLN1",
+        "type": "VARCHAR(12)",
+        "description": "Número principal do imobilizado (Ativo)"
+      },
+      {
+        "name": "ANLN2",
+        "type": "VARCHAR(4)",
+        "description": "Subnúmero do imobilizado"
+      },
+      {
+        "name": "TXT50",
+        "type": "VARCHAR(50)",
+        "description": "Descrição do ativo imobilizado"
+      },
+      {
+        "name": "AKTIV",
+        "type": "DATE",
+        "description": "Data de capitalização do ativo"
+      }
+    ],
+    "keywords": "análise, centro de custo, plano contábil, classificação, localização, código, descrição, patrimônio, valor, depreciação",
+    "join_rules": "Liga com ANLZ usando a chave ANLN1 para obter dados de alocação e centro de custo. Liga com ANEP usando a chave ANLN1 para obter dados de itens individuais do imobilizado."
+  },
+  {
+    "table_name": "ANLZ",
+    "description": "Mestre de Imobilizado: Alocações Dependentes do Tempo (FI-AA)",
+    "fields": [
+      {
+        "name": "BUKRS",
+        "type": "VARCHAR(4)",
+        "description": "Empresa"
+      },
+      {
+        "name": "ANLN1",
+        "type": "VARCHAR(12)",
+        "description": "Número principal do imobilizado"
+      },
+      {
+        "name": "BDATU",
+        "type": "DATE",
+        "description": "Data de validade final"
+      },
+      {
+        "name": "KOSTL",
+        "type": "VARCHAR(10)",
+        "description": "Centro de custo alocado ao ativo"
+      },
+      {
+        "name": "WERKS",
+        "type": "VARCHAR(4)",
+        "description": "Centro / Planta física do ativo"
+      }
+    ],
+    "keywords": "alocação, tempo, imobilizado, dependente, centro de custo, plano de contas, financeiro, administrativo, departamento",
+    "join_rules": "Liga com ANEP usando a chave ANLN1 para obter dados de itens individuais associados aos imobilizados."
+  },
+  {
+    "table_name": "ANEP",
+    "description": "Itens Individuais de Imobilizado (FI-AA)",
+    "fields": [
+      {
+        "name": "BUKRS",
+        "type": "VARCHAR(4)",
+        "description": "Empresa"
+      },
+      {
+        "name": "ANLN1",
+        "type": "VARCHAR(12)",
+        "description": "Número principal do imobilizado"
+      },
+      {
+        "name": "GJAHR",
+        "type": "INTEGER",
+        "description": "Exercício fiscal"
+      },
+      {
+        "name": "LNRAN",
+        "type": "INTEGER",
+        "description": "Número sequencial do item"
+      },
+      {
+        "name": "BWASL",
+        "type": "VARCHAR(3)",
+        "description": "Tipo de movimento (Ex: Aquisição, Baixa, Depreciação)"
+      },
+      {
+        "name": "ANBTR",
+        "type": "DECIMAL(13,2)",
+        "description": "Montante lançado"
+      }
+    ],
+    "keywords": "itens individuais, imobilizado, FI-AA, plano de contas, ativo fixo, centro operacional, patrimônio líquido, classificação, valor nominal.",
+    "join_rules": ""
+  },
+  {
+    "table_name": "FAGLFLEXT",
+    "description": "Totais do Novo Razão Geral (New G/L Totals)",
+    "fields": [
+      {
+        "name": "RYEAR",
+        "type": "INTEGER",
+        "description": "Exercício fiscal"
+      },
+      {
+        "name": "OBJNR00",
+        "type": "VARCHAR(22)",
+        "description": "Número do objeto principal"
+      },
+      {
+        "name": "RBUKRS",
+        "type": "VARCHAR(4)",
+        "description": "Empresa"
+      },
+      {
+        "name": "RACCT",
+        "type": "VARCHAR(10)",
+        "description": "Número da conta"
+      },
+      {
+        "name": "TSLVT",
+        "type": "DECIMAL(23,2)",
+        "description": "Saldo transportado na moeda da transação"
+      },
+      {
+        "name": "TSL01",
+        "type": "DECIMAL(23,2)",
+        "description": "Total das transações no período 01"
+      }
+    ],
+    "keywords": "FAGLFLEXT, Totais G/L, Razão Geral, Contabilidade, Balança, Fechamento, Análise Financeira, Movimentação Contábil, Centro Operacional.",
+    "join_rules": ""
+  },
+  {
+    "table_name": "PAYR",
+    "description": "Arquivo de Pagamentos / Cheques (FI)",
+    "fields": [
+      {
+        "name": "ZBUKR",
+        "type": "VARCHAR(4)",
+        "description": "Empresa pagadora"
+      },
+      {
+        "name": "VBLNR",
+        "type": "VARCHAR(10)",
+        "description": "Número do documento de pagamento"
+      },
+      {
+        "name": "CHECT",
+        "type": "VARCHAR(13)",
+        "description": "Número do cheque"
+      },
+      {
+        "name": "RWBTR",
+        "type": "DECIMAL(13,2)",
+        "description": "Montante do pagamento"
+      },
+      {
+        "name": "ZALDT",
+        "type": "DATE",
+        "description": "Data do pagamento"
+      }
+    ],
+    "keywords": "Pagamento, Cheque, Financeiro, Contabilidade, Movimentação, Valor, Data, Beneficiário, Baixa, Cancelamento",
+    "join_rules": ""
+  },
+  {
+    "table_name": "VBAK",
+    "description": "Documento de Vendas: Dados de Cabeçalho (Módulo SD).",
+    "fields": [
+      {
+        "name": "MANDT",
+        "type": "VARCHAR(3)",
+        "description": "Mandante"
+      },
+      {
+        "name": "VBELN",
+        "type": "VARCHAR(10)",
+        "description": "Documento de Vendas (Número do Pedido)"
+      },
+      {
+        "name": "ERDAT",
+        "type": "DATE",
+        "description": "Data de criação do registro"
+      },
+      {
+        "name": "KUNNR",
+        "type": "VARCHAR(10)",
+        "description": "Emissor da ordem (Código do Cliente)"
+      },
+      {
+        "name": "NETWR",
+        "type": "DECIMAL(15,2)",
+        "description": "Valor líquido do pedido de vendas"
+      },
+      {
+        "name": "WAERK",
+        "type": "VARCHAR(5)",
+        "description": "Moeda do documento de vendas"
+      },
+      {
+        "name": "VKORG",
+        "type": "VARCHAR(4)",
+        "description": "Organização de Vendas"
+      }
+    ],
+    "keywords": "pedidos de venda emitidos, ordens criadas, vendas, faturamento esperado, cabeçalho do pedido.",
+    "join_rules": "Liga com KNA1 usando a chave KUNNR para obter dados do cliente. Liga com VBAP usando a chave VBELN para obter os itens do pedido."
+  },
+  {
+    "table_name": "VBAP",
+    "description": "Documento de Vendas: Dados de Item (Módulo SD).",
+    "fields": [
+      {
+        "name": "MANDT",
+        "type": "VARCHAR(3)",
+        "description": "Mandante"
+      },
+      {
+        "name": "VBELN",
+        "type": "VARCHAR(10)",
+        "description": "Documento de Vendas (Número do Pedido)"
+      },
+      {
+        "name": "POSNR",
+        "type": "VARCHAR(6)",
+        "description": "Número do item do documento de vendas"
+      },
+      {
+        "name": "MATNR",
+        "type": "VARCHAR(18)",
+        "description": "Número do material (Produto vendido)"
+      },
+      {
+        "name": "ZMENG",
+        "type": "DECIMAL(13,3)",
+        "description": "Quantidade desejada (Volume de vendas)"
+      },
+      {
+        "name": "NETWR",
+        "type": "DECIMAL(15,2)",
+        "description": "Valor líquido do item"
+      }
+    ],
+    "keywords": "itens do pedido, produtos vendidos, linha do pedido, quantidade vendida.",
+    "join_rules": "Liga com VBAK usando a chave VBELN para relacionar o item ao seu cabeçalho do pedido."
+  },
+  {
+    "table_name": "KNA1",
+    "description": "Mestre de Clientes: Dados Gerais.",
+    "fields": [
+      {
+        "name": "MANDT",
+        "type": "VARCHAR(3)",
+        "description": "Mandante"
+      },
+      {
+        "name": "KUNNR",
+        "type": "VARCHAR(10)",
+        "description": "Número do cliente"
+      },
+      {
+        "name": "NAME1",
+        "type": "VARCHAR(35)",
+        "description": "Nome do cliente (Razão Social 1)"
+      },
+      {
+        "name": "ORT01",
+        "type": "VARCHAR(35)",
+        "description": "Cidade"
+      },
+      {
+        "name": "LAND1",
+        "type": "VARCHAR(3)",
+        "description": "Chave do país/Região"
+      }
+    ],
+    "keywords": "cliente, comprador, empresa parceira, nome do cliente, recebedor, sacado.",
+    "join_rules": "Liga com VBAK usando a chave KUNNR para relacionar o cliente aos seus pedidos de venda. Liga com LIKP usando a chave KUNNR para relacionar o cliente às suas entregas físicas."
+  },
+  {
+    "table_name": "MAKT",
+    "description": "Textos e Descrições de Materiais.",
+    "fields": [
+      {
+        "name": "MANDT",
+        "type": "VARCHAR(3)",
+        "description": "Mandante"
+      },
+      {
+        "name": "MATNR",
+        "type": "VARCHAR(18)",
+        "description": "Número do material"
+      },
+      {
+        "name": "SPRAS",
+        "type": "VARCHAR(1)",
+        "description": "Idioma da descrição"
+      },
+      {
+        "name": "MAKTX",
+        "type": "VARCHAR(40)",
+        "description": "Descrição do material (Nome do produto)"
+      }
+    ],
+    "keywords": "nome material, descricao produto, texto breve, mercadoria.",
+    "join_rules": "Liga com MARA, MARC, VBAP, EKPO, MSEG, LIPS ou VBRP usando a chave MATNR para obter o nome do material."
+  },
+  {
+    "table_name": "EKKO",
+    "description": "Documento de Compras: Dados de Cabeçalho (Módulo MM).",
+    "fields": [
+      {
+        "name": "MANDT",
+        "type": "VARCHAR(3)",
+        "description": "Mandante"
+      },
+      {
+        "name": "EBELN",
+        "type": "VARCHAR(10)",
+        "description": "Número do documento de compras (Pedido)"
+      },
+      {
+        "name": "BUKRS",
+        "type": "VARCHAR(4)",
+        "description": "Empresa"
+      },
+      {
+        "name": "BSTYP",
+        "type": "VARCHAR(1)",
+        "description": "Categoria do documento de compras"
+      },
+      {
+        "name": "BSART",
+        "type": "VARCHAR(4)",
+        "description": "Tipo de documento de compras"
+      },
+      {
+        "name": "LIFNR",
+        "type": "VARCHAR(10)",
+        "description": "Número da conta do fornecedor"
+      },
+      {
+        "name": "EKORG",
+        "type": "VARCHAR(4)",
+        "description": "Organização de compras"
+      },
+      {
+        "name": "AEDAT",
+        "type": "DATE",
+        "description": "Data de criação do registro do pedido de compra"
+      }
+    ],
+    "keywords": "pedidos compra, ordens compra, fornecimento, contrato, cabeçalho compras.",
+    "join_rules": "Liga com EKPO usando a chave EBELN. Liga com LFA1 usando a chave LIFNR para obter dados do fornecedor."
+  },
+  {
+    "table_name": "LFA1",
+    "description": "Mestre de Fornecedores: Dados Gerais.",
+    "fields": [
+      {
+        "name": "MANDT",
+        "type": "VARCHAR(3)",
+        "description": "Mandante"
+      },
+      {
+        "name": "LIFNR",
+        "type": "VARCHAR(10)",
+        "description": "Número da conta do fornecedor"
+      },
+      {
+        "name": "NAME1",
+        "type": "VARCHAR(35)",
+        "description": "Nome do fornecedor (Razão Social 1)"
+      },
+      {
+        "name": "ORT01",
+        "type": "VARCHAR(35)",
+        "description": "Cidade"
+      },
+      {
+        "name": "LAND1",
+        "type": "VARCHAR(3)",
+        "description": "Chave do país/Região"
+      }
+    ],
+    "keywords": "fornecedor, credor, parceiro comercial, vendedor, prestador serviço, nome fornecedor.",
+    "join_rules": "Liga com EKKO usando a chave LIFNR. Liga com BSIK ou BSAK usando a chave LIFNR para contas a pagar."
+  },
+  {
+    "table_name": "LIPS",
+    "description": "Documento de Remessa/Entrega: Dados de Item (Módulo SD).",
+    "fields": [
+      {
+        "name": "MANDT",
+        "type": "VARCHAR(3)",
+        "description": "Mandante"
+      },
+      {
+        "name": "VBELN",
+        "type": "VARCHAR(10)",
+        "description": "Documento de remessa (Número da Entrega)"
+      },
+      {
+        "name": "POSNR",
+        "type": "VARCHAR(6)",
+        "description": "Item da remessa"
+      },
+      {
+        "name": "MATNR",
+        "type": "VARCHAR(18)",
+        "description": "Número do material expedido"
+      },
+      {
+        "name": "LFIMG",
+        "type": "DECIMAL(13,3)",
+        "description": "Quantidade efetivamente entregue"
+      },
+      {
+        "name": "VRKME",
+        "type": "VARCHAR(3)",
+        "description": "Unidade de medida da venda"
+      },
+      {
+        "name": "VGBEL",
+        "type": "VARCHAR(10)",
+        "description": "Documento de referência (Número do Pedido original VBAK/VBAP)"
+      },
+      {
+        "name": "VGPOS",
+        "type": "VARCHAR(6)",
+        "description": "Item do documento de referência"
+      }
+    ],
+    "keywords": "item entregue, mercadoria expedida, quantidade enviada, remessa física, despacho.",
+    "join_rules": "Liga com LIKP usando a chave VBELN. Liga com MAKT usando a chave MATNR para o nome do produto. Liga com VBAP usando a chave VGBEL para rastrear o pedido original."
+  },
+  {
+    "table_name": "VBRP",
+    "description": "Documento de Faturamento: Dados de Item (Módulo SD).",
+    "fields": [
+      {
+        "name": "MANDT",
+        "type": "VARCHAR(3)",
+        "description": "Mandante"
+      },
+      {
+        "name": "VBELN",
+        "type": "VARCHAR(10)",
+        "description": "Documento de faturamento (Fatura/Nota Fiscal)"
+      },
+      {
+        "name": "POSNR",
+        "type": "VARCHAR(6)",
+        "description": "Item do documento de faturamento"
+      },
+      {
+        "name": "MATNR",
+        "type": "VARCHAR(18)",
+        "description": "Número do material"
+      },
+      {
+        "name": "FKIMG",
+        "type": "DECIMAL(13,3)",
+        "description": "Quantidade efetivamente faturada"
+      },
+      {
+        "name": "NETWR",
+        "type": "DECIMAL(15,2)",
+        "description": "Valor líquido faturado do item"
+      },
+      {
+        "name": "VGBEL",
+        "type": "VARCHAR(10)",
+        "description": "Documento de referência (Entrega LIPS ou Pedido VBAP original)"
+      },
+      {
+        "name": "VGPOS",
+        "type": "VARCHAR(6)",
+        "description": "Item do documento de referência"
+      }
+    ],
+    "keywords": "item faturado, nota fiscal, produto cobrado, receita, quantidade faturada.",
+    "join_rules": "Liga com VBRK usando a chave VBELN. Liga com MAKT usando a chave MATNR. Liga com LIPS ou VBAP usando a chave VGBEL para encontrar a origem da cobrança."
+  }
+]

@@ -5,6 +5,8 @@ dashboard.py — Página principal do Ask My Data com 3 seções:
   3. Schema Preview (tabelas e tipos)
 """
 
+import sqlparse
+import plotly.express as px
 import streamlit as st
 import pandas as pd
 from src.styles import get_global_css
@@ -191,8 +193,10 @@ def _render_consulta():
                     f"SCRIPT {result['script_type']} GERADO</div>",
                     unsafe_allow_html=True,
                 )
-                st.code(result["generated_script"], language="sql")
-                st.caption(f"💡 {result['explanation']}")
+                sql_formatado = sqlparse.format(result["generated_script"], reindent = True, keyword_case = 'upper')
+                st.code(sql_formatado, language="sql")
+                if result["explanation"] is not "":
+                    st.caption(f"💡 {result['explanation']}")
 
             # ── Gráfico Automático ──
             st.markdown("<hr>", unsafe_allow_html=True)
@@ -201,34 +205,57 @@ def _render_consulta():
                 unsafe_allow_html=True,
             )
 
-            chart = result.get("chart")
-            if chart:
-                st.markdown(
-                    f"<div style='color: #FFFFFF; font-weight: 600; font-size: 1.05rem; margin-bottom: 6px;'>"
-                    f"📊 {chart['title']}</div>"
-                    f"<div style='color: #A0AEC0; font-size: 0.8rem; margin-bottom: 16px;'>"
-                    f"Tipo de gráfico selecionado automaticamente: <b style='color: #FFFFFF;'>{chart['chart_type'].upper()}</b></div>",
-                    unsafe_allow_html=True,
-                )
+            charts = result.get("charts", [])
+            
+            if charts:
+                st.markdown("<h3 style='color: #FFFFFF; font-weight: 600;'>📊 Dashboards Gerados</h3>", unsafe_allow_html=True)
+                
+                # Itera sobre os gráficos de 2 em 2 para criar linhas
+                for i in range(0, len(charts), 2):
+                    cols = st.columns(2) # Cria duas colunas para o painel
+                    
+                    for j in range(2):
+                        if i + j < len(charts):
+                            chart = charts[i + j]
+                            col = cols[j]
+                            
+                            with col:
+                                # Header do gráfico isolado dentro da coluna
+                                st.markdown(
+                                    f"<div style='background-color: #1E293B; padding: 15px; border-radius: 8px; margin-bottom: 10px; border: 1px solid #334155;'>"
+                                    f"<div style='color: #FFFFFF; font-weight: 600; font-size: 1.05rem; margin-bottom: 6px;'>"
+                                    f"✨ {chart['title']}</div>"
+                                    f"<div style='color: #A0AEC0; font-size: 0.8rem; margin-bottom: 16px;'>"
+                                    f"Tipo selecionado: <b style='color: #38BDF8;'>{chart['chart_type'].upper()}</b></div>",
+                                    unsafe_allow_html=True,
+                                )
 
-                df = chart["data"]
-                x_col = chart["x"]
-                y_col = chart["y"]
-                ctype = chart["chart_type"]
+                                df = chart["data"]
+                                x_col = chart["x"]
+                                y_col = chart["y"]
+                                ctype = chart["chart_type"]
 
-                if ctype == "bar":
-                    st.bar_chart(df, x=x_col, y=y_col, use_container_width=True)
-                elif ctype == "line":
-                    st.line_chart(df, x=x_col, y=y_col, use_container_width=True)
-                elif ctype == "area":
-                    st.area_chart(df, x=x_col, y=y_col, use_container_width=True)
-                else:
-                    st.bar_chart(df, x=x_col, y=y_col, use_container_width=True)
+                                # Renderização
+                                if ctype == "bar":
+                                    st.bar_chart(df, x=x_col, y=y_col, use_container_width=True)
+                                elif ctype == "line":
+                                    st.line_chart(df, x=x_col, y=y_col, use_container_width=True)
+                                elif ctype == "area":
+                                    st.area_chart(df, x=x_col, y=y_col, use_container_width=True)
+                                elif ctype == "pie":
+                                    fig = px.pie(df, names=x_col, values=y_col)
+                                    # Removemos o fundo branco padrao do plotly para ficar bonito no dark mode do Streamlit
+                                    fig.update_layout(margin=dict(t=0, b=0, l=0, r=0), paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)")
+                                    st.plotly_chart(fig, use_container_width=True)
 
-                # Mostrar dados brutos em um expander compacto
-                with st.expander("Ver dados brutos da amostra"):
-                    st.dataframe(df, use_container_width=True, hide_index=True)
+                                # Expander fica contido dentro da coluna também
+                                with st.expander("Ver dados brutos da amostra"):
+                                    st.dataframe(df, use_container_width=True, hide_index=True)
+                                
+                                st.markdown("</div>", unsafe_allow_html=True) # Fecha a div do card
 
+            else:
+                st.info("💡 A IA avaliou que esta consulta tem um formato puramente textual/pontual e não exige visualizações gráficas.")
 
 # ─────────────────────────────────────────────────────────────
 #  SEÇÃO 2: GUIA SQL
