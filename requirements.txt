@@ -1,0 +1,13 @@
+streamlit
+langchain
+langchain-ollama
+langchain-chroma
+pywebview
+requests
+python-dotenv
+pymongo[srv]
+python-dotenv
+pymongo[srv]
+rank_bm25
+sqlparse
+plotly
