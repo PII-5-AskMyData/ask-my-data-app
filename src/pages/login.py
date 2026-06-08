@@ -1,6 +1,5 @@
 import base64
 import streamlit as st
-import streamlit.components.v1 as components
 from src.styles import get_global_css
 from src.repositories.auth_repository import AuthRepository
 
@@ -403,7 +402,7 @@ def render():
 
     with col_left:
         # Altura suficiente para mostrar todo o conteúdo e ícones
-        components.html(_get_carousel_component_html(), height=450)
+        st.iframe(_get_carousel_component_html(), height=450, width="stretch")
 
     with col_right:
         # Brand header
@@ -433,7 +432,7 @@ def render():
         # Error placeholder
         error_container = st.empty()
 
-        if st.button("Entrar", type="primary", use_container_width=True):
+        if st.button("Entrar", type="primary", width="stretch"):
             username = st.session_state.get("login_user", "").strip()
             password = st.session_state.get("login_pass", "")
 
