@@ -745,6 +745,7 @@ def process_user_query(query: str):
             "generated_script": response.get("codigo", ""),
             "explanation": response.get("explicacao", ""),
             "charts": charts_data,
+            "visualizacoes": lista_visualizacoes,
             "script_type": "SQL",
             "translated_query": translated_query,
         }

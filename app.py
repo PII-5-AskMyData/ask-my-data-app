@@ -23,6 +23,8 @@ if "session_id" not in st.session_state:
     import uuid
 
     st.session_state["session_id"] = str(uuid.uuid4())
+if "conversation_history" not in st.session_state:
+    st.session_state["conversation_history"] = []
 
 # Roteamento
 if not st.session_state["logged_in"]:

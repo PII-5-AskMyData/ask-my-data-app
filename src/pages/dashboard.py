@@ -5,6 +5,8 @@ dashboard.py — Página principal do Ask My Data com 3 seções:
   3. Schema Preview (tabelas e tipos)
 """
 
+from datetime import datetime, timezone
+
 import sqlparse
 import plotly.express as px
 import streamlit as st
@@ -51,7 +53,7 @@ def _render_sidebar():
 
         for key, (icon, label) in pages.items():
             if st.button(
-                f"{icon}  {label}", key=f"nav_{key}", use_container_width=True
+                f"{icon}  {label}", key=f"nav_{key}", width="stretch"
             ):
                 st.session_state["dashboard_page"] = key
                 st.rerun()
@@ -79,12 +81,308 @@ def _render_sidebar():
 
         st.markdown("<hr>", unsafe_allow_html=True)
 
-        if st.button("Sair", use_container_width=True, type="secondary"):
+        if st.button("Sair", width="stretch", type="secondary"):
             st.session_state["logged_in"] = False
             st.session_state["current_user"] = None
             st.session_state["current_user_display_name"] = None
             st.session_state["dashboard_page"] = "consulta"
             st.rerun()
+
+
+def _append_to_conversation_history(record: dict) -> None:
+    history = st.session_state.setdefault("conversation_history", [])
+    history.insert(0, record)
+    st.session_state["conversation_history"] = history[:50]
+
+
+def _normalize_datetime(value) -> datetime:
+    if not isinstance(value, datetime):
+        return datetime.min.replace(tzinfo=timezone.utc)
+    if value.tzinfo is None:
+        return value.replace(tzinfo=timezone.utc)
+    return value.astimezone(timezone.utc)
+
+
+def _stored_charts_count(item: dict) -> int:
+    charts = item.get("charts") or []
+    if charts:
+        return len(charts)
+    if isinstance(item.get("chart"), dict):
+        return 1
+    return 0
+
+
+def _merge_conversation_history(
+    mongo_items: list[dict], local_items: list[dict]
+) -> list[dict]:
+    merged: list[dict] = []
+    seen: set[tuple] = set()
+
+    for item in local_items + mongo_items:
+        key = (
+            item.get("user_query"),
+            item.get("generated_script", "")[:120],
+            str(item.get("created_at")),
+        )
+        if key in seen:
+            existing_idx = next(
+                i for i, record in enumerate(merged) if (
+                    record.get("user_query"),
+                    record.get("generated_script", "")[:120],
+                    str(record.get("created_at")),
+                ) == key
+            )
+            existing = merged[existing_idx]
+            if _stored_charts_count(item) > _stored_charts_count(existing):
+                merged[existing_idx] = item
+            continue
+        seen.add(key)
+        merged.append(item)
+
+    merged.sort(
+        key=lambda item: _normalize_datetime(item.get("created_at")),
+        reverse=True,
+    )
+    return merged[:200]
+
+
+def _conversation_key(item: dict) -> str:
+    if item.get("history_id"):
+        return item["history_id"]
+    if item.get("id"):
+        return f"mongo:{item['id']}"
+    return "|".join(
+        [
+            str(item.get("user_query", "")),
+            str(item.get("created_at", "")),
+            item.get("generated_script", "")[:120],
+        ]
+    )
+
+
+def _delete_conversation_item(item: dict, username: str | None) -> None:
+    interactions_repository.delete_interaction(
+        username=username,
+        mongo_id=item.get("id"),
+        history_id=item.get("history_id"),
+    )
+
+    item_key = _conversation_key(item)
+    st.session_state["conversation_history"] = [
+        record
+        for record in st.session_state.get("conversation_history", [])
+        if _conversation_key(record) != item_key
+    ]
+
+
+def _safe_history_button_key(prefix: str, item: dict, fallback: str) -> str:
+    raw_key = item.get("history_id") or item.get("id") or fallback
+    safe_key = "".join(char if char.isalnum() else "_" for char in str(raw_key))
+    return f"{prefix}_{safe_key}"
+
+
+def _paginate_items(
+    items: list[dict], page_size: int, page: int
+) -> tuple[list[dict], int, int, int]:
+    total = len(items)
+    total_pages = max(1, (total + page_size - 1) // page_size)
+    current_page = max(1, min(page, total_pages))
+    start = (current_page - 1) * page_size
+    end = min(start + page_size, total)
+    return items[start:end], current_page, total_pages, total
+
+
+def _reset_history_page() -> None:
+    st.session_state["history_page"] = 1
+
+
+def _render_history_navigation(
+    current_page: int,
+    total_pages: int,
+    total_items: int,
+    page_size: int,
+) -> None:
+    if total_items == 0:
+        return
+
+    start_item = (current_page - 1) * page_size + 1
+    end_item = min(current_page * page_size, total_items)
+
+    with st.container(border=True):
+        col_info, col_page, col_prev, col_next = st.columns([3, 1.2, 1, 1])
+        with col_info:
+            st.markdown(
+                f"**{start_item}–{end_item}** de **{total_items}** consultas"
+            )
+        with col_page:
+            st.markdown(
+                f"<div style='color:#94A3B8; padding-top:6px;'>Página {current_page}/{total_pages}</div>",
+                unsafe_allow_html=True,
+            )
+        with col_prev:
+            if st.button(
+                "Anterior",
+                key=f"history_prev_{current_page}",
+                disabled=current_page <= 1,
+                width="stretch",
+            ):
+                st.session_state["history_page"] = current_page - 1
+                st.rerun()
+        with col_next:
+            if st.button(
+                "Próxima",
+                key=f"history_next_{current_page}",
+                disabled=current_page >= total_pages,
+                width="stretch",
+            ):
+                st.session_state["history_page"] = current_page + 1
+                st.rerun()
+
+
+def _list_conversation_history(username: str | None) -> list[dict]:
+    local_items = [
+        item
+        for item in st.session_state.get("conversation_history", [])
+        if not username or item.get("username") == username
+    ]
+
+    if interactions_repository.available:
+        mongo_items = interactions_repository.list_interactions(
+            username=username, limit=200
+        )
+        return _merge_conversation_history(mongo_items, local_items)
+
+    return local_items
+
+
+def _chart_dataframe(chart: dict) -> pd.DataFrame:
+    data = chart.get("data")
+    if isinstance(data, pd.DataFrame):
+        return data
+    if isinstance(data, list):
+        return pd.DataFrame(data)
+    return pd.DataFrame()
+
+
+def _normalize_charts(item: dict, username: str | None = None) -> list[dict]:
+    charts = item.get("charts") or []
+    if charts:
+        return charts
+
+    chart = item.get("chart")
+    if isinstance(chart, dict):
+        return [chart]
+
+    cache_key = _conversation_key(item)
+    rebuilt_cache = st.session_state.setdefault("history_charts_cache", {})
+    if cache_key in rebuilt_cache:
+        return rebuilt_cache[cache_key]
+
+    rebuilt = interaction_service.resolve_charts_for_history_item(item)
+    if rebuilt:
+        visualizacoes = item.get("visualizacoes") or None
+        interaction_service.persist_rebuilt_charts(
+            item, username, rebuilt, visualizacoes
+        )
+        rebuilt_cache[cache_key] = rebuilt
+        for record in st.session_state.get("conversation_history", []):
+            if _conversation_key(record) == cache_key:
+                record["charts"] = rebuilt
+                break
+
+    return rebuilt
+
+
+def _render_charts(
+    charts: list[dict],
+    show_empty_message: bool = True,
+    compact: bool = False,
+    key_prefix: str = "consulta",
+) -> None:
+    if not charts:
+        if show_empty_message:
+            st.info(
+                "Nenhum gráfico foi gerado para esta consulta."
+            )
+        return
+
+    if not compact:
+        st.markdown(
+            "<h3 style='color: #FFFFFF; font-weight: 600;'>📊 Dashboards Gerados</h3>",
+            unsafe_allow_html=True,
+        )
+
+    for i in range(0, len(charts), 2):
+        cols = st.columns(2)
+
+        for j in range(2):
+            if i + j >= len(charts):
+                continue
+
+            chart = charts[i + j]
+            chart_idx = i + j
+            col = cols[j]
+            widget_key = "".join(
+                char if char.isalnum() else "_"
+                for char in f"{key_prefix}_{chart_idx}_{chart.get('chart_type', 'chart')}"
+            )
+
+            with col:
+                if compact:
+                    st.markdown(
+                        f"<div style='background-color: #1E293B; padding: 12px; border-radius: 8px; margin-bottom: 10px; border: 1px solid #334155;'>"
+                        f"<div style='color: #FFFFFF; font-weight: 600; font-size: 0.95rem; margin-bottom: 4px;'>"
+                        f"{chart['title']}</div>"
+                        f"<div style='color: #94A3B8; font-size: 0.75rem; margin-bottom: 12px;'>"
+                        f"{chart['chart_type'].upper()}</div>",
+                        unsafe_allow_html=True,
+                    )
+                else:
+                    st.markdown(
+                        f"<div style='background-color: #1E293B; padding: 15px; border-radius: 8px; margin-bottom: 10px; border: 1px solid #334155;'>"
+                        f"<div style='color: #FFFFFF; font-weight: 600; font-size: 1.05rem; margin-bottom: 6px;'>"
+                        f"✨ {chart['title']}</div>"
+                        f"<div style='color: #A0AEC0; font-size: 0.8rem; margin-bottom: 16px;'>"
+                        f"Tipo selecionado: <b style='color: #38BDF8;'>{chart['chart_type'].upper()}</b></div>",
+                        unsafe_allow_html=True,
+                    )
+
+                df = _chart_dataframe(chart)
+                x_col = chart["x"]
+                y_col = chart["y"]
+                ctype = chart["chart_type"]
+
+                if ctype == "bar":
+                    st.bar_chart(df, x=x_col, y=y_col, width="stretch")
+                elif ctype == "line":
+                    st.line_chart(df, x=x_col, y=y_col, width="stretch")
+                elif ctype == "area":
+                    st.area_chart(df, x=x_col, y=y_col, width="stretch")
+                elif ctype == "pie":
+                    fig = px.pie(df, names=x_col, values=y_col)
+                    fig.update_layout(
+                        margin=dict(t=0, b=0, l=0, r=0),
+                        paper_bgcolor="rgba(0,0,0,0)",
+                        plot_bgcolor="rgba(0,0,0,0)",
+                    )
+                    st.plotly_chart(
+                        fig,
+                        width="stretch",
+                        key=f"{widget_key}_pie",
+                    )
+
+                with st.expander(
+                    "Ver dados brutos da amostra",
+                    key=f"{widget_key}_expander",
+                ):
+                    st.dataframe(
+                        df,
+                        width="stretch",
+                        hide_index=True,
+                        key=f"{widget_key}_dataframe",
+                    )
+
+                st.markdown("</div>", unsafe_allow_html=True)
 
 
 # ─────────────────────────────────────────────────────────────
@@ -115,7 +413,7 @@ def _render_consulta():
     )
 
     # Formulário
-    with st.form("query_form", clear_on_submit=False):
+    with st.form("query_form", clear_on_submit=True):
         st.markdown(
             "<div style='color: #FFFFFF; font-weight: 600; font-size: 1rem; margin-bottom: 10px;'>Descreva seu Insight:</div>",
             unsafe_allow_html=True,
@@ -131,7 +429,7 @@ def _render_consulta():
         col_btn, _ = st.columns([1, 3])
         with col_btn:
             submit = st.form_submit_button(
-                "Gerar Script", type="primary", use_container_width=True, icon=":material/send:"
+                "Gerar Script", type="primary", width="stretch", icon=":material/send:"
             )
 
     # Resultados
@@ -150,13 +448,14 @@ def _render_consulta():
                 )
                 return
 
-            interaction_service.save_query_run(
+            record = interaction_service.save_query_run(
                 st.session_state.get("current_user"),
                 st.session_state.get("session_id"),
                 query,
                 result.get("translated_query", query),
                 result,
             )
+            _append_to_conversation_history(record)
 
             st.markdown("<hr>", unsafe_allow_html=True)
 
@@ -205,57 +504,7 @@ def _render_consulta():
                 unsafe_allow_html=True,
             )
 
-            charts = result.get("charts", [])
-            
-            if charts:
-                st.markdown("<h3 style='color: #FFFFFF; font-weight: 600;'>📊 Dashboards Gerados</h3>", unsafe_allow_html=True)
-                
-                # Itera sobre os gráficos de 2 em 2 para criar linhas
-                for i in range(0, len(charts), 2):
-                    cols = st.columns(2) # Cria duas colunas para o painel
-                    
-                    for j in range(2):
-                        if i + j < len(charts):
-                            chart = charts[i + j]
-                            col = cols[j]
-                            
-                            with col:
-                                # Header do gráfico isolado dentro da coluna
-                                st.markdown(
-                                    f"<div style='background-color: #1E293B; padding: 15px; border-radius: 8px; margin-bottom: 10px; border: 1px solid #334155;'>"
-                                    f"<div style='color: #FFFFFF; font-weight: 600; font-size: 1.05rem; margin-bottom: 6px;'>"
-                                    f"✨ {chart['title']}</div>"
-                                    f"<div style='color: #A0AEC0; font-size: 0.8rem; margin-bottom: 16px;'>"
-                                    f"Tipo selecionado: <b style='color: #38BDF8;'>{chart['chart_type'].upper()}</b></div>",
-                                    unsafe_allow_html=True,
-                                )
-
-                                df = chart["data"]
-                                x_col = chart["x"]
-                                y_col = chart["y"]
-                                ctype = chart["chart_type"]
-
-                                # Renderização
-                                if ctype == "bar":
-                                    st.bar_chart(df, x=x_col, y=y_col, use_container_width=True)
-                                elif ctype == "line":
-                                    st.line_chart(df, x=x_col, y=y_col, use_container_width=True)
-                                elif ctype == "area":
-                                    st.area_chart(df, x=x_col, y=y_col, use_container_width=True)
-                                elif ctype == "pie":
-                                    fig = px.pie(df, names=x_col, values=y_col)
-                                    # Removemos o fundo branco padrao do plotly para ficar bonito no dark mode do Streamlit
-                                    fig.update_layout(margin=dict(t=0, b=0, l=0, r=0), paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)")
-                                    st.plotly_chart(fig, use_container_width=True)
-
-                                # Expander fica contido dentro da coluna também
-                                with st.expander("Ver dados brutos da amostra"):
-                                    st.dataframe(df, use_container_width=True, hide_index=True)
-                                
-                                st.markdown("</div>", unsafe_allow_html=True) # Fecha a div do card
-
-            else:
-                st.info("💡 A IA avaliou que esta consulta tem um formato puramente textual/pontual e não exige visualizações gráficas.")
+            _render_charts(result.get("charts", []))
 
 # ─────────────────────────────────────────────────────────────
 #  SEÇÃO 2: GUIA SQL
@@ -411,7 +660,7 @@ def _render_historico():
     st.markdown(
         "<div class='animate-in'>"
         "<div class='title-gradient'>Histórico de Conversas</div>"
-        "<p class='subtitle'>Veja as perguntas feitas e os scripts gerados pela IA</p>"
+        "<p class='subtitle'>Consultas anteriores, scripts gerados e visualizações</p>"
         "</div>",
         unsafe_allow_html=True,
     )
@@ -419,51 +668,110 @@ def _render_historico():
     st.markdown("<div style='height: 16px;'></div>", unsafe_allow_html=True)
 
     username = st.session_state.get("current_user")
-    history = interactions_repository.list_interactions(username=username, limit=50)
+    history = _list_conversation_history(username)
 
     if not history:
-        st.info("Nenhuma conversa encontrada para este usuário.")
+        st.info("Nenhuma consulta registrada ainda.")
         return
 
-    for item in history:
+    if "history_page" not in st.session_state:
+        st.session_state["history_page"] = 1
+    if "history_page_size" not in st.session_state:
+        st.session_state["history_page_size"] = 10
+
+    with st.container(border=True):
+        col_size, col_total = st.columns([2, 4])
+        with col_size:
+            page_size = st.selectbox(
+                "Itens por página",
+                options=[5, 10, 25],
+                key="history_page_size",
+                on_change=_reset_history_page,
+            )
+        with col_total:
+            st.markdown(
+                f"<div style='padding-top:28px; color:#94A3B8;'>{len(history)} consulta(s) encontrada(s)</div>",
+                unsafe_allow_html=True,
+            )
+
+    page_items, current_page, total_pages, total_items = _paginate_items(
+        history, page_size, st.session_state["history_page"]
+    )
+    st.session_state["history_page"] = current_page
+
+    st.markdown("<div style='height: 12px;'></div>", unsafe_allow_html=True)
+
+    for idx, item in enumerate(page_items):
         created_at = item.get("created_at")
         created_at_text = (
-            created_at.strftime("%d/%m/%Y %H:%M:%S")
+            created_at.strftime("%d/%m/%Y %H:%M")
             if hasattr(created_at, "strftime")
             else "Data não informada"
         )
+        query_title = item.get("user_query", "Consulta sem título").strip()
+        if len(query_title) > 90:
+            query_title = f"{query_title[:87]}..."
+
+        delete_key = _safe_history_button_key("del_hist", item, f"{current_page}_{idx}")
+        charts = _normalize_charts(item, username)
+        chart_count = len(charts)
 
         with st.expander(
-            f"🧠 {item.get('user_query', 'Consulta sem título')}", expanded=False
+            f"{created_at_text}  ·  {query_title}"
+            + (f"  ·  {chart_count} gráfico(s)" if chart_count else ""),
+            expanded=False,
         ):
-            st.caption(created_at_text)
+            st.markdown("**Pergunta**")
             st.write(item.get("user_query", ""))
 
             translated_query = item.get("translated_query")
-            if translated_query:
+            if translated_query and translated_query != item.get("user_query"):
+                st.markdown("**Tradução SAP**")
                 st.code(translated_query, language="text")
 
+            st.markdown("**Script SQL**")
             st.code(item.get("generated_script", ""), language="sql")
-            st.caption(item.get("explanation", ""))
+
+            explanation = item.get("explanation", "")
+            if explanation:
+                st.caption(explanation)
 
             tables = item.get("tables_identified", [])
             if tables:
+                st.markdown("**Tabelas utilizadas**")
                 for table in tables:
                     st.markdown(
                         f"<div class='table-card'><div class='title'>{table.get('name', 'Tabela')}</div><div class='desc'>{table.get('description', '')}</div></div>",
                         unsafe_allow_html=True,
                     )
 
-            chart = item.get("chart") or {}
-            if chart:
-                st.write(
-                    {
-                        "tipo": chart.get("chart_type"),
-                        "titulo": chart.get("title"),
-                        "x": chart.get("x"),
-                        "y": chart.get("y"),
-                    }
+            if charts:
+                st.markdown("**Gráficos**")
+                _render_charts(
+                    charts,
+                    show_empty_message=False,
+                    compact=True,
+                    key_prefix=_safe_history_button_key(
+                        "chart", item, f"{current_page}_{idx}"
+                    ),
                 )
+
+            st.markdown("<div style='height: 8px;'></div>", unsafe_allow_html=True)
+            if st.button(
+                "Excluir",
+                key=delete_key,
+                type="secondary",
+                width="stretch",
+            ):
+                _delete_conversation_item(item, username)
+                remaining = len(history) - 1
+                remaining_pages = max(1, (remaining + page_size - 1) // page_size)
+                if st.session_state["history_page"] > remaining_pages:
+                    st.session_state["history_page"] = remaining_pages
+                st.rerun()
+
+    st.markdown("<div style='height: 10px;'></div>", unsafe_allow_html=True)
+    _render_history_navigation(current_page, total_pages, total_items, page_size)
 
 
 # ─────────────────────────────────────────────────────────────
@@ -557,7 +865,7 @@ def _render_salvas():
                     if st.button(
                         "💾 Salvar Alterações",
                         key=f"save_btn_{query_id}",
-                        use_container_width=True,
+                        width="stretch",
                     ):
                         saved_queries_repository.update_saved_query(
                             query_id=query_id,
@@ -573,7 +881,7 @@ def _render_salvas():
                         "🗑️ Excluir",
                         key=f"del_btn_{query_id}",
                         type="secondary",
-                        use_container_width=True,
+                        width="stretch",
                     ):
                         saved_queries_repository.delete_saved_query(
                             query_id=query_id, username=username
@@ -615,7 +923,7 @@ def _render_schema():
             df = pd.DataFrame(rows)
             st.dataframe(
                 df,
-                use_container_width=True,
+                width="stretch",
                 hide_index=True,
                 column_config={
                     "Coluna": st.column_config.TextColumn("Coluna", width="medium"),
@@ -645,7 +953,7 @@ def _render_schema():
     if selected_table != "Todas":
         full_df = full_df[full_df["Tabela"] == selected_table]
 
-    st.dataframe(full_df, use_container_width=True, hide_index=True, height=400)
+    st.dataframe(full_df, width="stretch", hide_index=True, height=400)
 
     st.markdown(
         f"<div style='color: #A0AEC0; font-size: 0.8rem; margin-top: 8px;'>"
