@@ -1,0 +1,14 @@
+<svg id="logo3d" width="280" viewBox="0 0 340 110" xmlns="http://www.w3.org/2000/svg">
+        <g transform="translate(14, 10)">
+          <rect x="0" y="46" width="16" height="46" rx="3" fill="#ffffff"/>
+          <rect x="20" y="32" width="16" height="60" rx="3" fill="#ffffff"/>
+          <rect x="40" y="16" width="16" height="76" rx="3" fill="#ffffff"/>
+          <rect x="60" y="32" width="16" height="60" rx="3" fill="#a0abbe" opacity="0.4"/>
+          <rect x="80" y="46" width="16" height="46" rx="3" fill="#a0abbe" opacity="0.4"/>
+          <circle cx="48" cy="6" r="7" fill="#ffffff"/>
+          <rect x="0" y="96" width="96" height="2" rx="1" fill="#a0abbe" opacity="0.2"/>
+        </g>
+        <line x1="130" y1="16" x2="130" y2="100" stroke="#444a5a" stroke-width="1.5"/>
+        <text x="142" y="60" font-size="28" font-weight="500" font-family="sans-serif" fill="#ffffff" letter-spacing="-0.5">Ask My Data</text>
+        <text x="144" y="80" font-size="10" font-family="sans-serif" fill="#7a8498" letter-spacing="1.5">INTELIGÊNCIA SAP</text>
+      </svg>

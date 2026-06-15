@@ -1,8 +1,12 @@
 import base64
 import streamlit as st
+import os 
 from src.styles import get_global_css
 from src.repositories.auth_repository import AuthRepository
 
+current_dir = os.path.dirname(os.path.abspath(__file__))       
+logo_path = os.path.join(current_dir, "..", "assets", "askMyData_logo3_dark.svg")   
+logo_path = os.path.normpath(logo_path)
 
 def _get_login_page_css():
     """CSS da página de login — responsivo para todas as telas."""
@@ -406,8 +410,19 @@ def render():
 
     with col_right:
         # Brand header
-        st.markdown("""
+        logo_html = ""
+        
+        try:
+            with open(logo_path, "rb") as image_file:
+                encoded_string = base64.b64encode(image_file.read()).decode()
+            
+            logo_html = f'<img src="data:image/svg+xml;base64,{encoded_string}" style="max-width: 200px; margin: 0 auto 15px auto; display: block;">'
+        except Exception as e:
+            pass
+
+        st.markdown(f"""
         <div class="brand-section">
+            {logo_html}
             <div class="brand-name">Ask My Data</div>
             <div class="brand-sub">Why not make it easy?</div>
         </div>

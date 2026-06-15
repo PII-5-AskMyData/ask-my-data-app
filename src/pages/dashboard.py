@@ -5,12 +5,14 @@ dashboard.py — Página principal do Ask My Data com 3 seções:
   3. Schema Preview (tabelas e tipos)
 """
 
+import base64
 from datetime import datetime, timezone
 
 import sqlparse
 import plotly.express as px
 import streamlit as st
 import pandas as pd
+import os as os
 from src.styles import get_global_css
 from src.rag import process_user_query, get_schema_preview, get_schema_dataframe
 from src.services.interaction_service import InteractionService
@@ -22,6 +24,10 @@ interaction_service = InteractionService()
 interactions_repository = InteractionsRepository()
 saved_queries_repository = SavedQueriesRepository()
 
+current_dir = os.path.dirname(os.path.abspath(__file__))       
+logo_path = os.path.join(current_dir, "..", "assets", "askMyData_logo3_dark.svg")   
+logo_path = os.path.normpath(logo_path)
+
 
 # ─────────────────────────────────────────────────────────────
 #  SIDEBAR
@@ -29,7 +35,22 @@ saved_queries_repository = SavedQueriesRepository()
 def _render_sidebar():
     """Renderiza a sidebar de navegação."""
     with st.sidebar:
-        st.markdown("<div style='height: 10px;'></div>", unsafe_allow_html=True)
+        st.markdown("<div style='height: 8px;'></div>", unsafe_allow_html=True)
+        
+        try:
+            # Lê a imagem e converte para base64
+            with open(logo_path, "rb") as image_file:
+                encoded_string = base64.b64encode(image_file.read()).decode()
+            
+            # Injeta a imagem via tag HTML (sem o botão de tela cheia)
+            # O style="width:100%" faz o mesmo papel do use_container_width=True
+            st.markdown(
+                f'<img src="data:image/svg+xml;base64,{encoded_string}" style="width:100%; margin-bottom: 10px;">',
+                unsafe_allow_html=True
+            )
+        except Exception as e:
+            st.error(f"Erro ao carregar a logo: {e}")
+        
         st.markdown(
             "<div class='title-gradient' style='font-size: 1.6rem; margin-bottom: 4px;'>Ask My Data</div>",
             unsafe_allow_html=True,
