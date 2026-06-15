@@ -7,9 +7,9 @@ Aplicação Streamlit para consultas em linguagem natural sobre dados SAP, com g
 ```Plaintext
 ask-my-data-app/
 │
-├── data/                   # Onde vai ficar o CSV com o dicionário SAP
-├── chroma_db/              # Onde o banco vetorial vai salvar os dados localmente
-├── src/                    # Onde colocaremos a lógica do RAG
+├── data/                   # Onde está localizado o JSON com o dicionário SAP
+├──  chroma_db/             # Onde o banco vetorial salva os dados localmente
+├── src/                    # Onde há o funcionamento lógico do APP
 │
 ├── app.py                  # A interface em Streamlit
 ├── main.py                 # O arquivo que cria a janela Desktop (PyWebView)
@@ -41,7 +41,7 @@ Use o arquivo `.env.example` versionado no repositório como base para criar o s
 Antes de rodar o projeto, garanta que você tenha instalado:
 
 - Python 3.10 ou superior
-- Ollama com o modelo `qwen2.5-coder:3b`
+- Ollama com o modelo `qwen2.5-coder:7b`
 - MongoDB Atlas ou MongoDB local
 - Um arquivo `.env` na raiz do projeto
 
@@ -72,10 +72,24 @@ Copy-Item .env.example .env
 - Digite o seguinte comando e dê enter:
 
 ```Bash
-ollama run qwen2.5-coder:3b
+ollama run qwen2.5-coder:7b
 ```
 
-Na primeira vez, o Ollama vai fazer o download do arquivo do modelo (a versão de 1.5b pesa pouco mais de 1 GB). Assim que o download terminar, o seu terminal vai se transformar em um chat e você já poderá conversar com a IA. Digite `\bye` para sair.
+Na primeira vez, o Ollama vai fazer o download do modelo. Assim que o download terminar, o seu terminal vai se transformar em um chat e você já poderá conversar com a IA. Digite `\bye` para sair.
+
+### Baixando o embedding (bge-m3):
+
+- Abra o terminal do seu computador (Prompt de Comando, PowerShell ou terminal do Linux/Mac).
+- Digite o seguinte comando e dê enter:
+
+```Bash
+ollama serve
+```
+- Abra outro terminal em uma nova janela em seu computador e digite o seguinte comando:
+
+```Bash
+ollama pull bge-m3
+```
 
 ### Clone o repositório:
 
@@ -143,6 +157,17 @@ source venv/bin/activate
 python main.py
 ```
 
-Se o Streamlit abrir sozinho no navegador, o projeto já está funcionando corretamente.
+### Inicializar a IA
 
-TODO: futuras instruções e adições sobre o projeto!!
+Para que a sua IA local seja inciada e se comunique com o APP siga os seguintes passos: 
+
+1. Abra o terminal do seu computador (Prompt de Comando, PowerShell ou terminal do Linux/Mac).
+2. Digite o seguinte comando e dê enter:
+
+```Bash
+ollama serve
+```
+
+*Deixe esse terminal aberto durante toda a execução do programa, pois e ele quem gerencia as funcionalidades da IA!*
+
+
