@@ -119,17 +119,23 @@ def _merge_conversation_history(
     seen: set[tuple] = set()
 
     for item in local_items + mongo_items:
+        # 1. Normaliza a data e remove os milissegundos para garantir a igualdade
+        dt = _normalize_datetime(item.get("created_at"))
+        dt_str = dt.strftime("%Y-%m-%d %H:%M:%S")
+        
         key = (
             item.get("user_query"),
             item.get("generated_script", "")[:120],
-            str(item.get("created_at")),
+            dt_str, 
         )
+        
         if key in seen:
+            # 2. Na hora de buscar o item existente, também precisamos formatar a data dele
             existing_idx = next(
                 i for i, record in enumerate(merged) if (
                     record.get("user_query"),
                     record.get("generated_script", "")[:120],
-                    str(record.get("created_at")),
+                    _normalize_datetime(record.get("created_at")).strftime("%Y-%m-%d %H:%M:%S")
                 ) == key
             )
             existing = merged[existing_idx]
@@ -151,10 +157,15 @@ def _conversation_key(item: dict) -> str:
         return item["history_id"]
     if item.get("id"):
         return f"mongo:{item['id']}"
+    
+    # Formata a data sem milissegundos para o fallback
+    dt = _normalize_datetime(item.get("created_at"))
+    dt_str = dt.strftime("%Y-%m-%d %H:%M:%S")
+    
     return "|".join(
         [
             str(item.get("user_query", "")),
-            str(item.get("created_at", "")),
+            dt_str,
             item.get("generated_script", "")[:120],
         ]
     )
