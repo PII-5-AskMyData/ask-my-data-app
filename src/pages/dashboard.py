@@ -431,6 +431,19 @@ def _render_consulta():
 
     st.markdown("<div style='height: 10px;'></div>", unsafe_allow_html=True)
 
+    # ── 1. Inicialização dos Estados da Tela ──
+    if "is_processing" not in st.session_state:
+        st.session_state.is_processing = False
+    if "current_result" not in st.session_state:
+        st.session_state.current_result = None
+    if "current_query" not in st.session_state:
+        st.session_state.current_query = ""
+
+
+    def start_processing():
+        st.session_state.is_processing = True
+        st.session_state.current_result = None
+
     # Card informativo
     st.markdown(
         """
@@ -444,7 +457,7 @@ def _render_consulta():
         unsafe_allow_html=True,
     )
 
-    # Formulário
+    # ── 2. Formulário Controlado por Estado ──
     with st.form("query_form", clear_on_submit=True):
         st.markdown(
             "<div style='color: #FFFFFF; font-weight: 600; font-size: 1rem; margin-bottom: 10px;'>Descreva seu Insight:</div>",
@@ -455,88 +468,109 @@ def _render_consulta():
             placeholder="Ex: Quero analisar o volume de produção por planta nos últimos 3 meses...",
             height=130,
             label_visibility="collapsed",
+            disabled=st.session_state.is_processing, 
         )
         st.markdown("<div style='height: 8px;'></div>", unsafe_allow_html=True)
 
         col_btn, _ = st.columns([1, 3])
         with col_btn:
             submit = st.form_submit_button(
-                "Gerar Script", type="primary", width="stretch", icon=":material/send:"
+                "Gerar Script", 
+                type="primary", 
+                width="stretch", 
+                icon=":material/send:",
+                disabled=st.session_state.is_processing, # <-- Bloqueia o botão
+                on_click=start_processing
             )
 
-    # Resultados
-    if submit:
+    # ── 3. Lógica de Processamento e RAG ──
+    if st.session_state.is_processing:
         if not query.strip():
             st.warning("O campo não pode estar vazio. Descreva a sua necessidade.")
-        else:
-            with st.spinner("Analisando intenção e buscando catálogo SAP..."):
-                result = process_user_query(query)
+            st.session_state.is_processing = False
+            st.rerun()
 
-            if result.get("error"):
-                st.error(
-                    result.get(
-                        "error_message", "Não foi possível processar a consulta."
+        with st.spinner("Analisando intenção e buscando catálogo SAP..."):
+            result = process_user_query(query)
+
+            
+            st.session_state.current_result = result
+            st.session_state.current_query = query
+
+            if not result.get("error"):
+                record = interaction_service.save_query_run(
+                    st.session_state.get("current_user"),
+                    st.session_state.get("session_id"),
+                    query,
+                    result.get("translated_query", query),
+                    result,
+                )
+                _append_to_conversation_history(record)
+        
+       
+        st.session_state.is_processing = False
+        st.rerun()
+
+    # ── 4. Renderização dos Resultados Preservados ──
+    if st.session_state.current_result:
+        result = st.session_state.current_result
+        
+        if result.get("error"):
+            st.error(
+                result.get(
+                    "error_message", "Não foi possível processar a consulta."
+                )
+            )
+            return
+
+        st.markdown("<hr>", unsafe_allow_html=True)
+
+        st.markdown(
+            "<div class='section-label' style='margin-top: 10px;'>Resultado da Análise</div>",
+            unsafe_allow_html=True,
+        )
+
+        # Tabelas Mapeadas + Script
+        col_tables, col_script = st.columns([1, 2.2], gap="large")
+
+        with col_tables:
+            st.markdown(
+                "<div style='color: #A0AEC0; font-weight: 600; font-size: 0.85rem; margin-bottom: 14px;'>TABELAS MAPEADAS</div>",
+                unsafe_allow_html=True,
+            )
+            if result.get("tables_identified"):
+                for table in result["tables_identified"]:
+                    st.markdown(
+                        f"""
+                        <div class="table-card">
+                            <div class="title">{table["name"]}</div>
+                            <div class="desc">{table["description"]}</div>
+                        </div>
+                        """,
+                        unsafe_allow_html=True,
                     )
-                )
-                return
+            else:
+                st.info("Nenhuma tabela mapeada para esta consulta.")
 
-            record = interaction_service.save_query_run(
-                st.session_state.get("current_user"),
-                st.session_state.get("session_id"),
-                query,
-                result.get("translated_query", query),
-                result,
-            )
-            _append_to_conversation_history(record)
-
-            st.markdown("<hr>", unsafe_allow_html=True)
-
+        with col_script:
             st.markdown(
-                "<div class='section-label' style='margin-top: 10px;'>Resultado da Análise</div>",
+                f"<div style='color: #A0AEC0; font-weight: 600; font-size: 0.85rem; margin-bottom: 14px;'>"
+                f"SCRIPT {result['script_type']} GERADO</div>",
                 unsafe_allow_html=True,
             )
+            sql_formatado = sqlparse.format(result["generated_script"], reindent = True, keyword_case = 'upper')
+            st.code(sql_formatado, language="sql")
+            if result["explanation"] != "":
+                st.caption(f"💡 {result['explanation']}")
 
-            # ── Tabelas Mapeadas + Script ──
-            col_tables, col_script = st.columns([1, 2.2], gap="large")
+        # Gráfico Automático
+        st.markdown("<hr>", unsafe_allow_html=True)
+        st.markdown(
+            "<div class='section-label'>Visualização Estimada dos Dados</div>",
+            unsafe_allow_html=True,
+        )
 
-            with col_tables:
-                st.markdown(
-                    "<div style='color: #A0AEC0; font-weight: 600; font-size: 0.85rem; margin-bottom: 14px;'>TABELAS MAPEADAS</div>",
-                    unsafe_allow_html=True,
-                )
-                if result.get("tables_identified"):
-                    for table in result["tables_identified"]:
-                        st.markdown(
-                            f"""
-                            <div class="table-card">
-                                <div class="title">{table["name"]}</div>
-                                <div class="desc">{table["description"]}</div>
-                            </div>
-                            """,
-                            unsafe_allow_html=True,
-                        )
-                else:
-                    st.info("Nenhuma tabela mapeada para esta consulta.")
-
-            with col_script:
-                st.markdown(
-                    f"<div style='color: #A0AEC0; font-weight: 600; font-size: 0.85rem; margin-bottom: 14px;'>"
-                    f"SCRIPT {result['script_type']} GERADO</div>",
-                    unsafe_allow_html=True,
-                )
-                sql_formatado = sqlparse.format(result["generated_script"], reindent = True, keyword_case = 'upper')
-                st.code(sql_formatado, language="sql")
-                if result["explanation"] is not "":
-                    st.caption(f"💡 {result['explanation']}")
-
-            # ── Gráfico Automático ──
-            st.markdown("<hr>", unsafe_allow_html=True)
-            st.markdown(
-                "<div class='section-label'>Visualização Estimada dos Dados</div>",
-                unsafe_allow_html=True,
-            )
-
-            _render_charts(result.get("charts", []))
+        _render_charts(result.get("charts", []))
 
 # ─────────────────────────────────────────────────────────────
 #  SEÇÃO 2: GUIA SQL
